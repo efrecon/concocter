@@ -121,9 +121,17 @@ configuration from files that we would have just re-generated.
 
 The sub-directory `test` contains a number of files that can be used to exercise
 and understand the inner workings of `concocter` without any external
-dependencies. From the main directory, start the test using the following
-command:
+dependencies. The test uses many of the sugaring facilities that are offered by
+`concoter` to exhibit their usefullness and provide a hands-on example. From the
+main directory, start the test using the following command:
 
 ```
 ./concocter.tcl -vars @%progdir%/test/vars.cfg -outputs @%progdir%/test/dst.cfg -update 10 -verbose "templater 3 utils 2 * 6" -- ./test/slowprinter.tcl ./test/concocter.tcl
 ```
+
+The test arranges to declare a variable that points at the content of the
+`concocter` main script and places a copy of the main script under the same
+name, but in the `test` sub-directory. `slowprinter.tcl` slowly prints out the
+content of the template-generated copy of the main script on the standard
+output. As the command increases logging, you should be able to witness whenever
+`concocter` tries to update the content of its variables at a regular pace.
