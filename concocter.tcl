@@ -1,7 +1,8 @@
 #! /usr/bin/env tclsh
 
-set appname [file rootname [file tail [info script]]]
-set rootdir [file normalize [file dirname [info script]]]
+set resolvedArgv0 [file dirname [file normalize $argv0/___]]];  # Trick to resolve last symlink
+set appname [file rootname [file tail $resolvedArgv0]]
+set rootdir [file normalize [file dirname $resolvedArgv0]]
 lappend auto_path [file join $rootdir .. lib] [file join $rootdir lib]
 
 package require Tcl 8.6
