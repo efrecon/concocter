@@ -298,14 +298,26 @@ proc ::output:update { out } {
     # Resolve path for this time (note that we use the content of variables,
     # which might be handy to automatically generate different filenames)
     set dst_path [::utils::resolve $OUT(-destination) $varmap]
-    set tpl_path [::utils::resolve $OUT(-template) $varmap]
-    ::utils::debug INFO "Updating content of $dst_path using template at $tpl_path"
+    if { [string index $OUT(-template) 0] eq "@" } {
+	set tpl_path [string trim [string range $OUT(-template) 1 end]]
+	set tpl_path [::utils::resolve $tpl_path $varmap]
+	::utils::debug INFO "Updating content of $dst_path using template at\
+	                     $tpl_path"
+    } else {
+	set tpl_path ""
+	::utils::debug INFO "Updating content of $dst_path using inline\
+	                     template [::value:clamp $OUT(-template)]"
+    }
     
     # Create a template and execute it to output its result into the output file
     # path.
     set updated 0
     set tpl [::templater::new]
-    ::templater::link $tpl $tpl_path
+    if { $tpl_path eq "" } {
+	::templater::parse $tpl $OUT(-template)
+    } else {
+	::templater::link $tpl $tpl_path	
+    }
     foreach { k v } $varmap {
         ::templater::setvar $tpl $k $v
     }

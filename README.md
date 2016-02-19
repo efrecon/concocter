@@ -57,17 +57,19 @@ argument is the default value for the variable. The following is an example:
 github @https://github.com/
 # Declare two variables, one depending on the content of the first one
 a 10
-b %a%+67
+b =%a%+67
 ```
+
 
 ## Outputs
 
 Outputs are composed of a file location, i.e. where to put the configuration
-file on disk, and of the location of a template to generate the content of that
-configuration file based on the variables declared as described in the previous
-section. Outputs are specified through the option `-outputs`, this option
-operates similarily to the `-vars` option with respect to the leading `@` in its
-value.
+file on disk, and of the location of a template or the content of a template.
+This template will be used to generate the content of that configuration file
+based on the variables declared as described in the previous section. Outputs
+are specified through the option `-outputs`, this option operates similarily to
+the `-vars` option with respect to the leading `@` in its value. To specify a
+template file, you should lead its path with the `@`-sign.
 
 In both the path to the configuration file to generate and to the template, `%`
 surrounded strings will be replaced by their values. Recognised are all
@@ -88,22 +90,16 @@ to any local (host) resources.
 
 The following example would arrange for the content of the github main page
 acquired as part of the previous example to be dumped to the local disk (this is
-a contrieved example!).
+a contrieved example!). It dumps the content of the `github` variable using the
+expression output led by `<%=`. Of course, it would be possible to transform
+this HTML in any possible way, but you would probably reference to a template
+path and lead that reference with an `@`-sign.
 
 ```
-# Dump to the github.htm file in the same directory as where we were read from,
-# using the template specified from `inline.tpl` in that same directory
-%dirname%/github.htm %dirname%/inline.tpl
+# Dump to the github.htm file in the same directory as where we were read from
+%dirname%/github.htm "<%=$github%>"
 ```
 
-This example would only require `inline.tpl` to contain the following line,
-which dumps the content of the `github` variable using the expression output led by
-`<%=`. Of course, it would be possible to transform this HTML or to add
-surrounding tags, for example.
-
-```
-<%=$github%>
-```
 
 ## Interaction with the external program
 
@@ -120,6 +116,7 @@ is able to detect the disappearing of the process under its control so as to
 restart it. However, it is possible to use the `-kill` option to send more
 gentle signals so as to tell the program under control to reload its
 configuration from files that we would have just re-generated.
+
 
 ## Test and Example
 
