@@ -209,45 +209,55 @@ proc ::var:update { var } {
 
     set updated 0
     set VAR(previous) $VAR(value)
-    if { [string index $VAR(-source) 0] eq "@" } {
-        set location [string trim [string range $VAR(-source) 1 end]]
-        ::utils::debug DEBUG "Reading content of $VAR(-name) from $location"
-        if { [string match http*://* $location] } {
-            array set URI [::uri::split $location]
-            set hdrs [list]
-            if { [info exists URI(user)] && $URI(user) ne "" } {
-                lappend hdrs Authorization "Basic [base64::encode $URI(user):$URI(pwd)]"
-            }
-            set tok [::http::geturl_followRedirects $location -headers $hdrs]
-            if { [::http::ncode $tok] >= 200 && [::http::ncode $tok] < 300 } {
-                set VAR(value) [::http::data $tok]
-                set updated [expr {$VAR(value) ne $VAR(previous)}]
-                ::utils::debug DEBUG "Updated variable $VAR(-name) to [value:clamp $VAR(value)]"
-            } else {
-                ::utils::debug ERROR "Cannot get value from $location"
-            }
-            ::http::cleanup $tok
-        } else {
-            set fname [::utils::resolve $location]
-            if { [catch {open $fname} fd] == 0 } {
-                set VAR(value) [read $fd]
-                set updated [expr {$VAR(value) ne $VAR(previous)}]
-                close $fd
-                ::utils::debug DEBUG "Updated variable $VAR(-name) to [value:clamp $VAR(value)]"
-            } else {
-                ::utils::debug ERROR "Cannot get value from $fname: $fd"                
-            }
-        }
-    } else {
-	# Math expression, there is no protection against cyclic dependencies or
-	# order.
-	set xpr [string map [var:snapshot] $VAR(-source)]
-	if { [catch {expr $xpr} value] == 0 } {
-	    set VAR(value) $value
-            set updated [expr {$VAR(value) ne $VAR(previous)}]
-	    ::utils::debug DEBUG "Updated variable $VAR(-name) to [value:clamp $VAR(value)]"
-	} else {
-	    ::utils::debug ERROR "Cannot evaluate math. expression $VAR(-source)"
+    set firstchar [string index $VAR(-source) 0]
+    switch -- $firstchar {
+	"@" {
+	    set location [string trim [string range $VAR(-source) 1 end]]
+	    ::utils::debug DEBUG "Reading content of $VAR(-name) from $location"
+	    if { [string match http*://* $location] } {
+		array set URI [::uri::split $location]
+		set hdrs [list]
+		if { [info exists URI(user)] && $URI(user) ne "" } {
+		    lappend hdrs Authorization "Basic [base64::encode $URI(user):$URI(pwd)]"
+		}
+		set tok [::http::geturl_followRedirects $location -headers $hdrs]
+		if { [::http::ncode $tok] >= 200 && [::http::ncode $tok] < 300 } {
+		    set VAR(value) [::http::data $tok]
+		    set updated [expr {$VAR(value) ne $VAR(previous)}]
+		    ::utils::debug DEBUG "Updated variable $VAR(-name) to [value:clamp $VAR(value)]"
+		} else {
+		    ::utils::debug ERROR "Cannot get value from $location"
+		}
+		::http::cleanup $tok
+	    } else {
+		set fname [::utils::resolve $location]
+		if { [catch {open $fname} fd] == 0 } {
+		    set VAR(value) [read $fd]
+		    set updated [expr {$VAR(value) ne $VAR(previous)}]
+		    close $fd
+		    ::utils::debug DEBUG "Updated variable $VAR(-name) to [value:clamp $VAR(value)]"
+		} else {
+		    ::utils::debug ERROR "Cannot get value from $fname: $fd"                
+		}
+	    }	    
+	}
+	"=" {
+	    # Math expression, there is no protection against cyclic
+	    # dependencies or order.
+	    set xpr [string trim [string range $VAR(-source) 1 end]]
+	    set xpr [string map [var:snapshot] $xpr]
+	    if { [catch {expr $xpr} value] == 0 } {
+		set VAR(value) $value
+		set updated [expr {$VAR(value) ne $VAR(previous)}]
+		::utils::debug DEBUG "Updated variable $VAR(-name) to [value:clamp $VAR(value)]"
+	    } else {
+		::utils::debug ERROR "Cannot evaluate math. expression $VAR(-source)"
+	    }	    
+	}
+	default {
+	    set VAR(value) [string map [var:snapshot] $VAR(-source)]
+	    set updated [expr {$VAR(value) ne $VAR(previous)}]
+	    ::utils::debug DEBUG "Updated variable $VAR(-name) to [value:clamp $VAR(value)]"	    
 	}
     }
     

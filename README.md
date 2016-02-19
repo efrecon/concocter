@@ -18,7 +18,7 @@ about configuration changes, if possible.
 
 ## Variables
 
-`concocter` supports two different types of variables:
+`concocter` supports three different types of variables:
 
   - Variables which specification starts with a `@` are understood as the
     content of a (possibly) remote resource. All characters that follow the `@`
@@ -26,12 +26,16 @@ about configuration changes, if possible.
     assign it to the variable internally. `concoter` only recognises HTTP/S at
     present and considers any other URL as being a ... local file.
 
-  - When the specification of the variable does not start with a `@`, the
-    content is understood as a proper Tcl mathematical
-    [expression](https://www.tcl.tk/man/tcl/TclCmd/expr.htm). Within that
-    expression, any string surrounded by `%` is considered the name of a
-    variable and the whole string will be replaced by the content of that
+  - Variables which specification starts with a `=` are understood as a proper
+    Tcl mathematical [expression](https://www.tcl.tk/man/tcl/TclCmd/expr.htm).
+    Within that expression, any string surrounded by `%` is considered the name
+    of a variable and the whole string will be replaced by the content of that
     variable before the expression is evaluated.
+
+  - Otherwise, the specification will be the content of the variable. Within
+    that specification, any string surrounded by `%` is considered the name of a
+    variable and it will be replaced by the content of that variable before the
+    expression is evaluated.
 
 Variables are specified through the option `-vars`. While it is possible to
 directly specify a tcl-compliant list as a value, in most cases, you will want
