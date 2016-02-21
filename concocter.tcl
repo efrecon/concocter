@@ -143,7 +143,7 @@ foreach ospec $CCT(-outputs) {
 foreach opt [list -dryrun -kill] {
     ::concocter::settings $opt $CCT($opt)
 }
-::concocter::settings -force 1
+#::concocter::settings -force 1
 
 # Recurrent (re)start of process whenever changes are detected or one shot.
 if { $CCT(-update) <= 0 } {
