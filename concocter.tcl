@@ -22,7 +22,7 @@ set prg_args {
     -kill    "15 500 15 1000 15 1000 9 3000" "Sequence of signals and respit periods"
     -verbose "templater 3 utils 2 * 5"     "Verbosity specification for internal modules"
     -h       ""    "Print this help and exit"
-    -plugins "@%progdir%/plugins.cfg" "Plugin configuration"
+    -plugins "{@*http://* %libdir%/plugins/http.tcl} {@*https://* %libdir%/plugins/http.tcl} {@* %libdir%/plugins/file.tcl} {=* %libdir%/plugins/expr.tcl} {* %libdir%/plugins/mapper.tcl}" "Plugin configuration"
 }
 
 # ::help:dump -- Dump help
