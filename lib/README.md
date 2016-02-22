@@ -6,3 +6,6 @@ synchrony.
   - `templater` also comes from [biot](https://bitbucket.org/enbygg3/biot/).
     There are other similar Tcl [implementations](http://wiki.tcl.tk/18175)
     around, we might want to look into them at some point.
+  - `docker` is a copy of the main library from the
+    [Docker client](https://github.com/efrecon/docker-client) implementation
+    in Tcl.

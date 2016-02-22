@@ -1,7 +1,8 @@
 package require base64
 
 namespace eval ::concocter::var::plugin::http {
-    
+    namespace import [namespace parent [namespace parent]]::setvar
+    namespace import [namespace parent [namespace parent]]::snapshot    
 }
 
 # ::http::geturl_followRedirects -- geturl++
@@ -54,9 +55,9 @@ proc ::concocter::var::plugin::http::update { var location } {
     if { [info exists URI(user)] && $URI(user) ne "" } {
         lappend hdrs Authorization "Basic [base64::encode $URI(user):$URI(pwd)]"
     }
-    set tok [[namespace parent]::GetURL $location -headers $hdrs]
+    set tok [GetURL $location -headers $hdrs]
     if { [::http::ncode $tok] >= 200 && [::http::ncode $tok] < 300 } {
-        set updated [[namespace parent [namespace parent]]::setvar $var [::http::data $tok]]
+        set updated [setvar $var [::http::data $tok]]
     } else {
         ::utils::debug ERROR "Cannot get value from $location"
     }

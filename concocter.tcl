@@ -22,7 +22,7 @@ set prg_args {
     -kill    "15 500 15 1000 15 1000 9 3000" "Sequence of signals and respit periods"
     -verbose "templater 3 utils 2 * 5"     "Verbosity specification for internal modules"
     -h       ""    "Print this help and exit"
-    -plugins "{@*http://* %libdir%/plugins/http.tcl} {@*https://* %libdir%/plugins/http.tcl} {@* %libdir%/plugins/file.tcl} {=* %libdir%/plugins/expr.tcl} {* %libdir%/plugins/mapper.tcl}" "Plugin configuration"
+    -plugins "@%maindir%/lib/concocter/plugins.spc" "Plugin configuration"
 }
 
 # ::help:dump -- Dump help
@@ -102,7 +102,8 @@ foreach {k v} [array get CCT -*] {
 # Read content of plugin specification file, if relevant, and register the
 # variable plugins.
 if { [string index $CCT(-plugins) 0] eq "@" } {
-    set fname [::utils::resolve [string trim [string range $CCT(-plugins) 1 end]]]
+    set fname [::utils::resolve [string trim [string range $CCT(-plugins) 1 end]] \
+		    [list maindir $rootdir]]
     ::utils::debug INFO "Reading content of $fname for the plugins"
     set CCT(-plugins) [::utils::lread $fname -1 "plugins"]
 }

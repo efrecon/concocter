@@ -8,11 +8,23 @@ namespace eval ::concocter::var {
     }
     
     variable libdir [file dirname [file normalize [file dirname [info script]/___]]]
+    
+    namespace export {[a-z]*}
 }
 
 
 proc ::concocter::var::vars {} {
     return [lsort [info vars [namespace current]::var::*]]    
+}
+
+proc ::concocter::var::find { name } {
+    foreach v [vars] {
+        upvar \#0 $v VAR
+        if { $name eq $VAR(-name) } {
+            return $v
+        }
+    }
+    return ""
 }
 
 
@@ -49,7 +61,9 @@ proc ::concocter::var::setvar { var value } {
     set VAR(previous) $VAR(value)
     set VAR(value) $value
     set updated [expr {$VAR(value) ne $VAR(previous)}]
-    ::utils::debug DEBUG "Updated variable $VAR(-name) to [[namespace parent]::clamp $VAR(value)]"
+    if { $updated } {
+        ::utils::debug DEBUG "Updated variable $VAR(-name) to [[namespace parent]::clamp $VAR(value)]"    
+    }
     return $updated
 }
 
@@ -78,7 +92,7 @@ proc ::concocter::var::update { var } {
     upvar \#0 $var VAR
 
     foreach {ptn cmd} $gvars::plugins {
-        if { [string match $ptn $VAR(-source)] } {
+        if { $VAR(-source) ne "" && [string match $ptn $VAR(-source)] } {
             if { [catch {eval [list $cmd $var $VAR(-source)]} res] } {
                 ::utils::debug WARN "Cannot update $var through plugin $cmd: $res"
             } else {
@@ -108,14 +122,29 @@ proc ::concocter::var::plugin { ptn path } {
 }
 
 
-proc ::concocter::var::new { name src {dft ""}} {
+proc ::concocter::var::new { name { src "" } {dft ""}} {
     variable gvars
     
-    set var [namespace current]::var::[format %05d [incr gvars::generator]]
-    upvar \#0 $var VAR
-    set VAR(-name) $name
-    set VAR(-source) $src
-    set VAR(value) $dft
+    set var [find $name]
+    if { $var eq "" } {
+        set var [namespace current]::var::[format %05d [incr gvars::generator]]
+        upvar \#0 $var VAR
+        set VAR(-name) $name
+        set VAR(-source) $src
+        set VAR(value) $dft
+        if { $src eq "" } {
+            ::utils::debug DEBUG "Created internal variable $name (default: $dft)"    
+        } else {
+            ::utils::debug DEBUG "Created variable $name to update from $src (default: $dft)"    
+        }
+    } else {
+        if { $src ne "" } {
+            return -code error "Cannot change source of existing variable to $src"
+        } elseif { $dft ne "" } {
+            setvar $var $dft
+            ::utils::debug DEBUG "Silently updated variable $name to $dft"
+        }
+    }
     
     return $var
 }
