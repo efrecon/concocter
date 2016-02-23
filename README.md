@@ -23,8 +23,9 @@ about configuration changes, if possible.
   - Variables which specification starts with a `@` are understood as the
     content of a (possibly) remote resource. All characters that follow the `@`
     sign should be an URL and `concocter` will get the content from that URL and
-    assign it to the variable internally. `concoter` only recognises HTTP/S at
-    present and considers any other URL as being a ... local file.
+    assign it to the variable internally. `concoter` only recognises HTTP/S and
+    a special docker construct (see below) at present and considers any other
+    URL as being a ... local file.
 
   - Variables which specification starts with a `=` are understood as a proper
     Tcl mathematical [expression](https://www.tcl.tk/man/tcl/TclCmd/expr.htm).
@@ -116,6 +117,39 @@ is able to detect the disappearing of the process under its control so as to
 restart it. However, it is possible to use the `-kill` option to send more
 gentle signals so as to tell the program under control to reload its
 configuration from files that we would have just re-generated.
+
+
+## Docker Support
+
+`concocter` is able to communicate with a running docker daemon and
+automatically creates variables to reflect the current status of all running
+containers known at the daemon. Docker support is triggered whenever a variable
+of any name is associated to a source which specification is similar to
+`@docker+unix:///var/run/docker.sock`. Anything that follows the `+` in that URL
+is considered the location of the docker daemon.
+
+The name of the variable is used as the base for a number of other
+auto-generated variables. The variable itself will contain the list of (short)
+containers identifiers running at the daemon. For each container, a series of
+variables starting with the name of the main variable, followed by a dash and
+followed by the identifier of the container will be created. So, for example, if
+the variable was named `docker`, and if only one container with short identifier
+`7161b422b031` was running, a series of variables which name starts with
+`docker-7161b422b031` would be created by appending using the following suffixes
+to this core name:
+
+  - `-id` will contain the full identifier of the container.
+  - `-name` will contain the name of the container.
+  - `-ip` will contain the IP address of the container on the bridge network.
+  - `-mac` will contain the MAC address of the container on the bridge network.
+  - `-ports` will contain the list of external ports actually forwarded. Each
+    port specification will be composed of the port number, followed by a slash,
+    followed by the type, e.g. `tcp`.
+  - `-image` will contain the name of the image that led to the container.
+  - `-environment` will contain the list of environment variables that are
+    present within the container.
+  - For each environment variable, a dash and the name of the environment
+    variable will also lead to a new variable.
 
 
 ## Test and Example
