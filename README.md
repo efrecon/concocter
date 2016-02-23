@@ -5,7 +5,10 @@ based on the content of remote locations before starting another program. In
 order to generate the configuration files, `concocter` supports a flexible
 templating system based on the Tcl-language. The content of (remote) resources
 is represented as variables, and these variables can be used as part of the
-configuration files.
+configuration files. In addition, `concocter` has support for `docker`: it will
+be able to generate configuration files using the current dynamic state of the
+docker daemon through exposing a wide number of properties for each running
+container, including their environment variables.
 
 In its most simple form, `concocter` will get the content of all specified
 variables, generates configuration files using the templates and the content of
