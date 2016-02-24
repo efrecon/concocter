@@ -14,7 +14,8 @@ proc ::concocter::var::plugin::docker::update { var location } {
     upvar \#0 $var VAR
     
     set updated 0
-    set location [string trim [string range $VAR(-source) 1 end]]
+    set location [string trim [string range $location 1 end]]
+    set location [::utils::resolve $location]
     set idx [string first "docker+" $location]
     if { $idx >= 0 } {
         incr idx [string length "docker+"]

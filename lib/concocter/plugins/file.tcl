@@ -6,9 +6,9 @@ proc ::concocter::var::plugin::file::update { var location } {
     upvar \#0 $var VAR
     
     set updated 0
-    set location [string trim [string range $VAR(-source) 1 end]]
-    ::utils::debug DEBUG "Reading content of $VAR(-name) from $location"
+    set location [string trim [string range $location 1 end]]
     set fname [::utils::resolve $location]
+    ::utils::debug DEBUG "Reading content of $VAR(-name) from $fname"
     if { [catch {open $fname} fd] == 0 } {
         set updated [setvar $var [read $fd]]
         close $fd

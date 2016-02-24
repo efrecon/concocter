@@ -48,7 +48,8 @@ proc ::concocter::var::plugin::http::update { var location } {
     upvar \#0 $var VAR
     
     set updated 0
-    set location [string trim [string range $VAR(-source) 1 end]]
+    set location [string trim [string range $location 1 end]]
+    set location [::utils::resolve $location]
     ::utils::debug DEBUG "Reading content of $VAR(-name) from $location"
     array set URI [::uri::split $location]
     set hdrs [list]

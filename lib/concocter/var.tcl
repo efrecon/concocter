@@ -93,8 +93,9 @@ proc ::concocter::var::update { var } {
 
     foreach {ptn cmd} $gvars::plugins {
         if { $VAR(-source) ne "" && [string match $ptn $VAR(-source)] } {
-            if { [catch {eval [list $cmd $var $VAR(-source)]} res] } {
-                ::utils::debug WARN "Cannot update $var through plugin $cmd: $res"
+            set src [string map [snapshot] $VAR(-source)]
+            if { [catch {eval [list $cmd $var $src]} res] } {
+                ::utils::debug WARN "Cannot update $var from $src through plugin $cmd: $res"
             } else {
                 return $res
             }
