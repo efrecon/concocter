@@ -90,7 +90,9 @@ specified via the `-vars` option are made available as regular Tcl variables.
 The specific leading `<%=` can be used to output the content of the enclosed Tcl
 expression. Execution of the code is done in a
 [safe](https://www.tcl.tk/man/tcl/TclCmd/safe.htm) interpreter to prevent access
-to any local (host) resources.
+to any local (host) resources. Calling the command `source` is allowed, but file
+paths will be jailed to the directory location of the sourcing template,
+whenever this is available.
 
 The following example would arrange for the content of the github main page
 acquired as part of the previous example to be dumped to the local disk (this is
@@ -151,8 +153,13 @@ to this core name:
   - `-image` will contain the name of the image that led to the container.
   - `-environment` will contain the list of environment variables that are
     present within the container.
-  - For each environment variable, a dash and the name of the environment
-    variable will also lead to a new variable.
+  - For each environment variable, a dash, the keyword `environment`, another
+    dash and the name of the environment variable will also lead to a new
+    variable.
+  - `-label` will contain the list of labels that are associated to the
+    container.
+  - For each label, a dash, the keyword `label`, another dash and the name of
+    the label will also lead to a new variable.
 
 
 ## Test and Example
@@ -168,8 +175,11 @@ main directory, start the test using the following command:
 ```
 
 The test arranges to declare a variable that points at the content of the
-`concocter` main script and places a copy of the main script under the same
-name, but in the `test` sub-directory. `slowprinter.tcl` slowly prints out the
-content of the template-generated copy of the main script on the standard
-output. As the command increases logging, you should be able to witness whenever
-`concocter` tries to update the content of its variables at a regular pace.
+`concocter` main script and places a mirror and reversed copy of the main script
+under the same name, but in the `test` sub-directory. This is achieved through
+calling a procedure that is sourced from an external file to exercise this
+particular facility. `slowprinter.tcl` slowly prints out the content of the
+template-generated copy of the main script on the standard output. As the
+command increases logging, you should be able to witness whenever
+`concocter` tries to update the content of its variables at a regular pace (but
+does not succeeds in doing so since the content does not change between checks).

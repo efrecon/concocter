@@ -1,1 +1,2 @@
-<%=$self%>
+<%source reverter.tcl%>
+<%=[reverter $self]%>

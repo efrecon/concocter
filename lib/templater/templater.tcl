@@ -156,7 +156,7 @@ proc ::templater::render { t } {
 
     if { $TEMPLATE(code) ne "" } {
 	if { [catch {$TEMPLATE(interp) eval $TEMPLATE(code)} txt] } {
-	    ::utils::debug 1 "Could not interpret templating code. Error: $txt\
+	    ::utils::debug 1 "Could not interprete templating code. Error: $txt\
                               when executing\n$TEMPLATE(code)"
 	    set txt ""
 	} else {

@@ -1,3 +1,5 @@
+package require fileutil
+
 namespace eval ::concocter::output {
     variable version 0.1
     namespace eval output {};  # This will host all output information
@@ -64,6 +66,9 @@ proc ::concocter::output::update { out } {
     } else {
 	::templater::link $tpl $tpl_path	
     }
+    ::templater::config $tpl \
+            -sourceCmd [list [namespace current]::Source \
+                                    $out [file dirname $tpl_path]]
     foreach { k v } $varmap {
         ::templater::setvar $tpl $k $v
     }
@@ -93,6 +98,17 @@ proc ::concocter::output::new { dst tpl {context ""}} {
     return $out
 }
 
-
+proc ::concocter::output::Source { out jail tpl fname } {
+    # Jail under the directory that contained the template
+    upvar \#0 $out OUT
+    set s_name [::fileutil::jail $jail $fname]
+    ::utils::debug NOTICE "Sourcing content of $fname to help templating $OUT(-destination)"
+    
+    set fd [open $s_name]
+    set content [read $fd]
+    close $fd
+    
+    return $content
+}
 
 package provide concocter::output $::concocter::output::version
