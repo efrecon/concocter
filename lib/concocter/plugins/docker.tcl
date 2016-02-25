@@ -76,27 +76,42 @@ proc ::concocter::var::plugin::docker::update { var location } {
             set updated [expr $updated||[setvar $v [dict get $cspec Image]]]
             
             # Now inspect fully the container to be able to access the
-            # environment variables. For each variable, declare and set,
-            # prepending the name of the main variable and the (short)
+            # environment variables and labels. For each variable, declare and
+            # set, prepending the name of the main variable and the (short)
             # identifier of the container.
             set details [$daemon inspect [dict get $cspec Id]]
             set config [dict get $details Config]
+
+            # Environment vars, encapsulate under -environment in namespace
             set e_vars [list]
             foreach env [dict get $config Env] {
                 set idx [string first "=" $env]
                 if { $idx > 0 } {
                     set e_var [string range $env 0 [expr {$idx-1}]]
-                    set e_val [string range $env [expr {$idx+1}] end]
-                    set v [new $VAR(-name)-${cid}-$e_var]
+                    set e_val [string range $env [expr {$idx+1}] end]                    
+                    set v [new $VAR(-name)-${cid}-environment-$e_var]
                     set updated [expr $updated||[setvar $v $e_val]]
                     lappend e_vars $e_var
                 }
             }
-            
+
             # Make sure we also set a variable that contains the list of all
             # environment variables to ease looping in templates.
             set v [new $VAR(-name)-${cid}-environment]
             set updated [expr $updated||[setvar $v $e_vars]]
+
+            # Environment vars, encapsulate under -label in namespace
+            set labels [list]
+            foreach {lbl val} [dict get $config Labels] {
+                set v [new $VAR(-name)-${cid}-label-$lbl]
+                set updated [expr $updated||[setvar $v $val]]
+                lappend labels $lbl
+            }
+            
+            # Make sure we also set a variable that contains the list of all
+            # environment variables to ease looping in templates.
+            set v [new $VAR(-name)-${cid}-label]
+            set updated [expr $updated||[setvar $v $labels]]
         }
         
         # Finally set the main variable to be the list of currently running and
