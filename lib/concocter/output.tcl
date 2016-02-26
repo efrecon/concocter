@@ -60,7 +60,11 @@ proc ::concocter::output::update { out } {
     # Create a template and execute it to output its result into the output file
     # path.
     set updated 0
-    set tpl [::templater::new]
+    set access [list]
+    foreach p [[namespace parent]::settings -access] {
+        lappend access [::utils::resolve $p]
+    }
+    set tpl [::templater::new -access $access]
     if { $tpl_path eq "" } {
 	::templater::parse $tpl $OUT(-template)
     } else {

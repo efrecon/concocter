@@ -21,6 +21,7 @@ set prg_args {
     -dryrun  "off" "Dry-run, do not execute, just perform templating"
     -kill    "15 500 15 1000 15 1000 9 3000" "Sequence of signals and respit periods"
     -verbose "templater 3 utils 2 * 5"     "Verbosity specification for internal modules"
+    -access  {}    "List of directories or files that templaters can access"
     -h       ""    "Print this help and exit"
     -plugins "@%maindir%/lib/concocter/plugins.spc" "Plugin configuration"
 }
@@ -141,10 +142,9 @@ foreach ospec $CCT(-outputs) {
 }
 
 ::concocter::settings -command $argv
-foreach opt [list -dryrun -kill] {
+foreach opt [list -dryrun -kill -access] {
     ::concocter::settings $opt $CCT($opt)
 }
-#::concocter::settings -force 1
 
 # Recurrent (re)start of process whenever changes are detected or one shot.
 if { $CCT(-update) <= 0 } {

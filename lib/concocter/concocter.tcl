@@ -16,6 +16,7 @@ namespace eval ::concocter {
         variable -dryrun   0;  # Don't run anything
         variable -kill     {15 500 15 1000 15 1000 9 3000}
         variable -force    0;  # Force update always (use for debugging)
+        variable -access   {}; # List of directories/file accessible to templaters
     }
 }
 
@@ -230,7 +231,18 @@ proc ::concocter::loop { next } {
 
 
 proc ::concocter::settings {args} {
-    return [::utils::mset [namespace current]::gvars $args -]
+    variable gvars
+    
+    if { [llength $args] == 1 } {
+        set opt [lindex $args 0]
+        if { [info exists gvars::$opt] } {
+            return [set gvars::$opt]
+        } else {
+            return -code error "$opt is not a setting"
+        }
+    } else {
+        return [::utils::mset [namespace current]::gvars $args -]    
+    }
 }
 
 

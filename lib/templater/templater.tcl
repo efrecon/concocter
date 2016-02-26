@@ -1,6 +1,7 @@
 package require Tcl 8.4
 
 package require utils
+package require island
 
 namespace eval ::templater {
     variable TPL
@@ -10,6 +11,7 @@ namespace eval ::templater {
 	    -var          "__r_e_s_u_l_t__"
 	    -munge        on
 	    -sourceCmd    ""
+	    -access       {}
 	}
 	variable libdir [file dirname [file normalize [info script]]]
 	variable version 0.2
@@ -92,12 +94,19 @@ proc ::templater::__init { t { force off } } {
     upvar \#0 $t TEMPLATE
     
     if { $TEMPLATE(interp) eq "" } {
-	set TEMPLATE(interp) [interp create -safe]
+	set TEMPLATE(interp) [interp create -safe -- \
+			      [::utils::identifier [namespace current]::interp]]
 	$TEMPLATE(interp) alias puts ::templater::__puts
 	$TEMPLATE(interp) alias source ::templater::__source $t
 	set TEMPLATE(initvars) [$TEMPLATE(interp) eval info vars]
     }
 
+    # Give access to selected parts of the filesystem
+    ::island::reset $TEMPLATE(interp)
+    foreach path $TEMPLATE(-access) {
+	::island::add $TEMPLATE(interp) $path
+    }
+    
     if { [string is true $force] } {
 	set vars [$TEMPLATE(interp) eval info vars]
 	foreach v $vars {
