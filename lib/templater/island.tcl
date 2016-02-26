@@ -53,7 +53,7 @@ proc ::island::file { slave cmd args } {
         writable {
             set fname [lindex $args 0]
             if { [Allowed $slave $fname] } {
-                return [uplevel [linsert $args 0 $slave invokehidden file]]
+                return [uplevel [linsert $args 0 $slave invokehidden file $cmd]]
             } else {
                 return -code error "Access to $fname denied."
             }
@@ -69,7 +69,7 @@ proc ::island::file { slave cmd args } {
         split -
         tail -
         volumes {
-            return [uplevel [linsert $args 0 $slave invokehidden file]]
+            return [uplevel [linsert $args 0 $slave invokehidden file $cmd]]
         }
         copy -
         delete -
@@ -90,7 +90,7 @@ proc ::island::file { slave cmd args } {
                     return -code error "Access to $path denied."
                 }
             }
-            return [uplevel [linsert $args 0 $slave invokehidden file]]
+            return [uplevel [linsert $args 0 $slave invokehidden file $cmd]]
         }
         mkdir {
             foreach path $args {
@@ -98,7 +98,7 @@ proc ::island::file { slave cmd args } {
                     return -code error "Access to $path denied."
                 }
             }
-            return [uplevel [linsert $args 0 $slave invokehidden file]]
+            return [uplevel [linsert $args 0 $slave invokehidden file $cmd]]
         }
     }
 }
