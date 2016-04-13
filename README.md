@@ -39,7 +39,10 @@ about configuration changes, if possible.
   - Otherwise, the specification will be the content of the variable. Within
     that specification, any string surrounded by `%` is considered the name of a
     variable and it will be replaced by the content of that variable before the
-    expression is evaluated.
+    expression is evaluated. In addition to internal variables, `concocter` is
+    also able to pick up the content of environment variables and to default to
+    a value whenever a variable does not exist. The default value is then
+    separated from the name of the variable using a `|` sign.
 
 Variables are specified through the option `-vars`. While it is possible to
 directly specify a tcl-compliant list as a value, in most cases, you will want
