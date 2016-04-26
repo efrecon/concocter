@@ -214,7 +214,7 @@ proc ::concocter::loop { next } {
 	} else {
 	    ::utils::debug NOTICE "Templates changed, now executing: ${gvars::-command}"
             if { [llength ${gvars::-command}] > 0 } {
-                if { $next <= 0 } {
+                if { $next < 0 } {
                     exec {*}${gvars::-command}
                 } else {
                     # Check if we have a running command right now
