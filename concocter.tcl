@@ -15,15 +15,16 @@ package require base64
 package require concocter
 
 set prg_args {
-    -vars    ""    "List of variables and their locations, preceed with @-sign for file indirection"
-    -outputs ""    "List of file paths and their templates, preceed with @-sign for file indirection"
-    -update  "-1"  "Period at which we check for variables, in seconds (negative to turn off)"
-    -dryrun  "off" "Dry-run, do not execute, just perform templating"
-    -kill    "15 500 15 1000 15 1000 9 3000" "Sequence of signals and respit periods"
-    -verbose "templater 3 utils 2 * 5"     "Verbosity specification for internal modules"
-    -access  {}    "List of directories or files that templaters can access"
-    -h       ""    "Print this help and exit"
-    -plugins "@%maindir%/lib/concocter/plugins.spc" "Plugin configuration"
+    -vars     ""    "List of variables and their locations, preceed with @-sign for file indirection"
+    -outputs  ""    "List of file paths and their templates, preceed with @-sign for file indirection"
+    -update   "-1"  "Period at which we check for variables, in seconds (negative to turn off)"
+    -external ""    "External command to run at update interval, non-zero==force updating"
+    -dryrun   "off" "Dry-run, do not execute, just perform templating"
+    -kill     "15 500 15 1000 15 1000 9 3000" "Sequence of signals and respit periods"
+    -verbose  "templater 3 utils 2 * 5"     "Verbosity specification for internal modules"
+    -access   {}    "List of directories or files that templaters can access"
+    -h        ""    "Print this help and exit"
+    -plugins  "@%maindir%/lib/concocter/plugins.spc" "Plugin configuration"
 }
 
 # ::help:dump -- Dump help
@@ -151,6 +152,6 @@ if { $CCT(-update) <= 0 } {
     ::concocter::loop  -1
 } else {
     set next [expr {int($CCT(-update)*1000)}]
-    ::concocter::loop $next
+    ::concocter::loop $next $CCT(-external)
 }
 vwait forever

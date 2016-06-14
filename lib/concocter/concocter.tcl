@@ -17,11 +17,12 @@ namespace eval ::concocter {
         variable -kill     {15 500 15 1000 15 1000 9 3000}
         variable -force    0;  # Force update always (use for debugging)
         variable -access   {}; # List of directories/file accessible to templaters
+        variable interps   [dict create]
     }
 }
 
 
-# ::value:clamp -- Clamp long strings
+# ::concocter::clamp -- Clamp long strings
 #
 #       Clamp long strings to some their beginning only, when their size is too
 #       big. Strings that are longer than the allowed size are returned with a
@@ -174,6 +175,88 @@ proc ::concocter::Killer { i {here 0}} {
     }
 }
 
+proc ::concocter::hook { cspec } {
+    variable gvars
+    
+    set cspec [string trim $cspec]
+    if { $cspec eq "" } {
+        return 0
+    }
+
+    if { [string equal -nocase [file extension $cspec] ".tcl"] } {
+        # Specific treatment for Tcl scripts, since we are able to call
+        # procedures in them, etc. We'll create interpreters to run them in, see
+        # below for details.
+        set arobas [string first @ $cspec]
+        if { $arobas >= 0 } {
+            # When we have an @ in the string, we understand this as a procedure
+            # to call within an interpreter (source from the file after the @
+            # sign). In this case, we keep the interpreter from one call to the
+            # next, so it can store which ever state it needs to.
+            set script [string trim [string range $cspec [expr {$arobas+1}] end]]
+
+            # Create the interpreter once, we'll reuse it
+            if { ![dict exists $gvars::interps $script] } {
+                set itrp [interp create]
+                if { [catch {$itrp eval source [::utils::resolve $script]} res] != 0 } {
+                    ::utils::debug ERROR "Cannot load script from $script: $res"
+                    interp delete $itrp
+                    return 0
+                }
+                dict set gvars::interps $script $itrp
+            }
+            
+            # We have an interpreter. Split what is before the @ sign along the
+            # possible ! sign (to be able to give parameters to the procedure,
+            # if necessary) and use the return code of the procedure.
+            if { [dict exists $gvars::interps $script] } {
+                set itrp [dict get $gvars::interps $script]
+                set call [split [string range $cspec 0 [expr {$arobas-1}]] !]
+                ::utils::debug INFO "Executing hook $call from $script for update forcing"
+                try {
+                    set status [$itrp eval {*}$call]
+                } on error {res} {
+                    ::utils::debug WARN "Cannot execute $call in interp: $res"
+                    set status 0
+                }
+                
+                return $status
+            }
+        } else {
+            # When the specification is only a tcl script, we'll source it in a
+            # new interpreter on and on. We use the return value of the last
+            # command as the status.
+            ::utils::debug INFO "Executing hook from $cspec for update forcing"
+            set itrp [interp create]
+            try {
+                set status [$itrp eval source [::utils::resolve $cspec]]
+            } on error {res} {
+                ::utils::debug ERROR "Cannot execute Tcl code at $cspec: $res"
+                set status 0
+            } finally {
+                interp delete $itrp
+            }
+            
+            return $status
+        }
+    } else {
+        # Otherwise, we execute the command and use its result to know what to
+        # do.
+        ::utils::debug INFO "Executing hook at $cmd for update forcing"
+        try {
+            set res [exec -ignorestderr -- {*}$cspec]
+            set status 0
+        } trap CHILDSTATUS {res options} {
+            set status [lindex [dict get $options -errorcode] 2]
+        } on error {res} {
+            ::utils::debug ERROR "Cannot execute command hook: $res"
+            set status -1
+        }
+    }
+    
+    return 0; # Failsafe for all
+}
+
 
 # ::concocter::loop -- Main loop
 #
@@ -190,7 +273,7 @@ proc ::concocter::Killer { i {here 0}} {
 #
 # Side Effects:
 #       (re)start the process under our control
-proc ::concocter::loop { next } {
+proc ::concocter::loop { next { hook ""} } {
     variable gvars
     
     # We force the update of the variables once and only once, i.e. the first
@@ -200,7 +283,12 @@ proc ::concocter::loop { next } {
     
     # Reschedule a change at once since we might wait infinitely below.
     if { $next > 0 } {
-        after $next [namespace code [list loop $next]]
+        after $next [namespace code [list loop $next $hook]]
+    }
+    
+    # Call external hook command
+    if { [hook $hook] } {
+        set forceupdate 1
     }
 
     # Now perform a big update of variables and output files, and start the
@@ -245,5 +333,24 @@ proc ::concocter::settings {args} {
     }
 }
 
+
+proc ::concocter::Hash {str {modulo 2147483647} } {
+    if { $str eq "" } {
+        return 0
+    }
+
+    set inited 0
+    set hash 0
+    foreach c [split $str {}] {
+        set val [scan $c %c]
+        if { $inited } {
+            set hash [expr {($hash+int(rand()*$modulo)+$val)%$modulo}]
+        } else {
+            set hash [expr {($hash+int(srand($val)*$modulo)+$val)%$modulo}]
+            set inited 1
+        }
+    }
+    return $hash
+}
 
 package provide concocter $::concocter::version
