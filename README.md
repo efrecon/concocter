@@ -127,6 +127,36 @@ gentle signals so as to tell the program under control to reload its
 configuration from files that we would have just re-generated.
 
 
+## Forcing Template (re)generation
+
+`concocter` supports an external command through the `-external` command-line
+option. When an external command is set, the command will be called at each
+regular polling of the variables and its result can influence `concocter` so
+that it (re)generates the templates (and possibly restart the program under its
+control). There are three types of external command recognised by `concocter`:
+
+* The path to a script, when the extension of the first item is `.tcl`. In that
+  case, the script will be loaded into a separate interpreter with full power.
+  The path to the script will become `argv0` in the script and the remaining
+  arguments will be reflected by `argv`. When the script returns a non-zero
+  value, `concocter` will regenerate the templates.
+  
+* A path, similar to the above case, containing an `@` sign (arobas). In that
+  case, what precedes the sign is considered to be the name of a procedure to be
+  called each time `concocter` wants to poll for template regeneration. As
+  opposed to the case above, the interpreter is kept between checks, meaning
+  that it will be possible to save state between runs as part of the variables
+  of the interpreter. `argv0` and `argv` are otherwise treated as above. When
+  the procedure call contains `!` signs, these are considered to be separating
+  arguments that will be passed to the procedure (which then is the first
+  argument of the `!` separated string). When the procedure returns a non-zero
+  value, `concocter` will regenerate the templates.
+  
+* Anything else is considered a command that `concocter` will run to decide for
+  template regeneration. Whenever its exit code is non-zero, `concocter` will
+  regenerate the templates.
+
+
 ## Docker Support
 
 `concocter` is able to communicate with a running docker daemon and
@@ -186,3 +216,7 @@ template-generated copy of the main script on the standard output. As the
 command increases logging, you should be able to witness whenever
 `concocter` tries to update the content of its variables at a regular pace (but
 does not succeeds in doing so since the content does not change between checks).
+
+If you add the option `-external reload@%prgdir%/test/hook.tcl` to the command
+above, you should be able to see that the `reload` command decides on a random
+basis to regenerate the templates and restart the reverse output program.
