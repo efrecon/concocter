@@ -37,7 +37,7 @@ proc ::concocter::exec::POpen4 { args } {
     foreach chan [list stdout stderr $readOut $readErr $writeIn] {
         chan configure $chan -buffering line -blocking false
     }
-
+    
     return [list $pid $writeIn $readOut $readErr]
 }
 
@@ -82,8 +82,8 @@ proc ::concocter::exec::LineRead { c fd } {
     # we are done.
     if { [eof $CMD($fd)] } {
 	fileevent $CMD($fd) readable {}
-	if { [fileevent $CMD(stdout) readable] eq "" \
-		 && [fileevent $CMD(stderr) readable] eq "" } {
+	if { ( $CMD(stdout) eq "" || [fileevent $CMD(stdout) readable] eq "" ) \
+		 && ( $CMD(stderr) eq "" || [fileevent $CMD(stderr) readable] eq "" ) } {
 	    set CMD(done) 1
 	}
     }
@@ -130,9 +130,22 @@ proc ::concocter::exec::run { args } {
     set CMD(result) {}
 
     # Kick-off the command and wait for its end
-    lassign [POpen4 {*}$args] CMD(pid) CMD(stdin) CMD(stdout) CMD(stderr)
-    fileevent $CMD(stdout) readable [namespace code [list LineRead $c stdout]]
-    fileevent $CMD(stderr) readable [namespace code [list LineRead $c stderr]]
+    if { [lsearch [split [::platform::generic] -] win32] >= 0 } {
+        set pipe |[concat $args]
+        if { $CMD(outerr) } {
+            append pipe " 2>@1"
+        }
+        set CMD(stdin) ""
+        set CMD(stderr) ""
+        set CMD(stdout) [open $pipe]
+        set CMD(pid) [pid $CMD(stdout)]
+        fileevent $CMD(stdout) readable [namespace code [list LineRead $c stdout]]
+    } else {
+        lassign [POpen4 {*}$args] CMD(pid) CMD(stdin) CMD(stdout) CMD(stderr)
+        fileevent $CMD(stdout) readable [namespace code [list LineRead $c stdout]]
+        fileevent $CMD(stderr) readable [namespace code [list LineRead $c stderr]]
+    }
+    ::utils::debug TRACE "Started $CMD(command), running at $CMD(pid)"
     vwait ${c}(done);   # Wait for command to end
 
     ::utils::debug TRACE "Command $CMD(command) has ended, cleaning up and returning"
