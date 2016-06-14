@@ -183,21 +183,25 @@ proc ::concocter::hook { cspec } {
         return 0
     }
 
-    if { [string equal -nocase [file extension $cspec] ".tcl"] } {
+    set prg [lindex $cspec 0]
+    if { [string equal -nocase [file extension $prg] ".tcl"] } {
         # Specific treatment for Tcl scripts, since we are able to call
         # procedures in them, etc. We'll create interpreters to run them in, see
         # below for details.
-        set arobas [string first @ $cspec]
+        set arobas [string first @ $prg]
         if { $arobas >= 0 } {
             # When we have an @ in the string, we understand this as a procedure
             # to call within an interpreter (source from the file after the @
             # sign). In this case, we keep the interpreter from one call to the
             # next, so it can store which ever state it needs to.
-            set script [string trim [string range $cspec [expr {$arobas+1}] end]]
+            set script [string trim [string range $prg [expr {$arobas+1}] end]]
 
             # Create the interpreter once, we'll reuse it
             if { ![dict exists $gvars::interps $script] } {
                 set itrp [interp create]
+                $itrp eval set ::argv0 $prg
+                $itrp eval set ::argv [lrange $cspec 1 end]
+                $itrp eval set ::argc [llength [lrange $cspec 1 end]]
                 if { [catch {$itrp eval source [::utils::resolve $script]} res] != 0 } {
                     ::utils::debug ERROR "Cannot load script from $script: $res"
                     interp delete $itrp
@@ -228,8 +232,11 @@ proc ::concocter::hook { cspec } {
             # command as the status.
             ::utils::debug INFO "Executing hook from $cspec for update forcing"
             set itrp [interp create]
+            $itrp eval set ::argv0 $prg
+            $itrp eval set ::argv [lrange $cspec 1 end]
+            $itrp eval set ::argc [llength [lrange $cspec 1 end]]
             try {
-                set status [$itrp eval source [::utils::resolve $cspec]]
+                set status [$itrp eval source [::utils::resolve $prg]]
             } on error {res} {
                 ::utils::debug ERROR "Cannot execute Tcl code at $cspec: $res"
                 set status 0
@@ -242,7 +249,7 @@ proc ::concocter::hook { cspec } {
     } else {
         # Otherwise, we execute the command and use its result to know what to
         # do.
-        ::utils::debug INFO "Executing hook at $cmd for update forcing"
+        ::utils::debug INFO "Executing hook at $cspec for update forcing"
         try {
             set res [exec -ignorestderr -- {*}$cspec]
             set status 0
@@ -252,6 +259,7 @@ proc ::concocter::hook { cspec } {
             ::utils::debug ERROR "Cannot execute command hook: $res"
             set status -1
         }
+        return $status
     }
     
     return 0; # Failsafe for all
@@ -334,6 +342,7 @@ proc ::concocter::settings {args} {
 }
 
 
+# Unused.
 proc ::concocter::Hash {str {modulo 2147483647} } {
     if { $str eq "" } {
         return 0
