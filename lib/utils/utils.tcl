@@ -13,7 +13,7 @@ namespace eval ::utils {
 	    comments       "\#"
 	    verboseTags    {1 CRITICAL 2 ERROR 3 WARN 4 NOTICE 5 INFO 6 DEBUG 7 TRACE}
 	    subst          {% @ ~}
-	    dflt_sep        {/ |}
+	    dflt_sep       {/ |}
 	    empty          {\"\" \{\} -}
 	    fullpath       ""
 	    maxresolve     10
@@ -134,17 +134,22 @@ proc ::utils::pullopt {_argv _opts} {
 #       Modifies the content of the array.
 proc ::utils::pushopt { _argv opt _ary } {
     upvar $_argv argv $_ary ARY
+    set modified [list]
     if { [::utils::getopt argv $opt< prepend] } {
-	set ARY($opt) $prepend$ARY($opt)
+	set ARY($opt) $prepend\ $ARY($opt)
 	::utils::debug 5 "Prepended '$prepend' to argument $opt ==> '$ARY($opt)'"
+        lappend modified $opt
     }
     if { [::utils::getopt argv $opt> append] } {
-	set ARY($opt) $ARY($opt)$append
+	set ARY($opt) $ARY($opt)\ $append
 	::utils::debug 5 "Appended '$append' to argument $opt ==> '$ARY($opt)'"
+        lappend modified $opt
     }
     if { [::utils::getopt argv $opt ARY($opt)] } {
 	::utils::debug 5 "Set argument $opt to '$ARY($opt)'"
+        lappend modified $opt
     }
+    return [lsort -unique $modified]
 }
 
 
@@ -497,28 +502,30 @@ proc ::utils::Defaults { txt {keys {}}} {
 	    # the default value below.
 	    set rx "${s}\(.*?\)\\${separator}\(.*?\)${s}"
 	    
-	    # Replace all occurences of what looks like defaulting
-	    # instructions to the default that they contain.
-	    while 1 {
-		# Find next match in string and break out of loop if
-		# none found.
-		set match [regexp -all -inline -indices -- $rx $txt]
-		if { [llength $match] == 0 } {
-		    break
+	    if { [llength [split $txt $separator]] <= 2 } {
+		# Replace all occurences of what looks like defaulting
+		# instructions to the default that they contain.
+		while 1 {
+		    # Find next match in string and break out of loop if
+		    # none found.
+		    set match [regexp -all -inline -indices -- $rx $txt]
+		    if { [llength $match] == 0 } {
+			break
+		    }
+		    # Access the match, all these will be pairs of
+		    # indices.
+		    foreach {m v dft} $match break
+		    # Extract the (default) value from the string and
+		    # relace the whole defaulting construct with the
+		    # default value or the value of the key
+		    set k [string range $txt [lindex $v 0] [lindex $v 1]]
+		    if { [info exists CURRENT($k)] } {
+			set val $CURRENT($k)
+		    } else {
+			set val [string range $txt [lindex $dft 0] [lindex $dft 1]]
+		    }
+		    set txt [string replace $txt [lindex $m 0] [lindex $m 1] $val]
 		}
-		# Access the match, all these will be pairs of
-		# indices.
-		foreach {m v dft} $match break
-		# Extract the (default) value from the string and
-		# relace the whole defaulting construct with the
-		# default value or the value of the key
-		set k [string range $txt [lindex $v 0] [lindex $v 1]]
-		if { [info exists CURRENT($k)] } {
-		    set val $CURRENT($k)
-		} else {
-		    set val [string range $txt [lindex $dft 0] [lindex $dft 1]]
-		}
-		set txt [string replace $txt [lindex $m 0] [lindex $m 1] $val]
 	    }
 	}
     }
