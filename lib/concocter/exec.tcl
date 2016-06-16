@@ -1,3 +1,5 @@
+package require platform
+
 namespace eval ::concocter::exec {
     variable version 0.1
     namespace eval command {};  # This will host all commands information
