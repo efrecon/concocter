@@ -78,7 +78,18 @@ proc ::utils::getopt {_argv name args } {
 	-value  ""
 	-option ""
     }
-    array set OPTS $args
+    if { [string index [lindex $args 0] 0] ne "-" } {
+	# Backward compatibility with old code! arguments that follow the name
+	# of the option to parse are possibly the name of the variable where to
+	# store the value and possibly a default value when the option isn't
+	# found.
+	set OPTS(-value) [lindex $args 0]
+	if { [llength $args] > 1 } {
+	    set OPTS(-default) [lindex $args 1]
+	}
+    } else {
+	array set OPTS $args
+    }
     
     # Access where the options are stored and possible where to store
     # side-results.
