@@ -62,7 +62,9 @@ proc ::concocter::output::update { out } {
     set updated 0
     set access [list]
     foreach p [[namespace parent]::settings -access] {
-        lappend access [::utils::resolve $p]
+        set rp [::utils::resolve $p]
+        ::utils::debug INFO "Giving away access to $rp to templater"
+        lappend access $rp
     }
     set tpl [::templater::new -access $access]
     if { $tpl_path eq "" } {
