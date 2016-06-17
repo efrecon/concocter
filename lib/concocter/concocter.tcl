@@ -129,7 +129,7 @@ proc ::concocter::Killer { i {here 0}} {
 	}
 	
 	if { $present } {
-	    ::utils::debug DEBUG "Process under our control $CMD(command) still at\
+	    ::utils::debug DEBUG "Process under our control $CMD(command) is at\
 				  PID: $CMD(pid)"	    
 	}
 	
@@ -141,13 +141,14 @@ proc ::concocter::Killer { i {here 0}} {
 		# No signal means that we are actually at the end of the list. If we
 		# had requested for process death in the previous phase, and since
 		# the process is still there, we don't know how to proceed and exit.
-		# Otherwise, things are fine, we can simply start a new process.
+                # Otherwise, things are fine and since the (last) signal wasn't
+                # deadly we just don't have anything else to do.
 		if { $here } {
 		    ::utils::debug CRITICAL "Could not manage to kill process"
 		    exit
 		} else {
-		    ::utils::debug INFO "All signals sent, restarting process"
-		    exec::run -keepblanks -raw -- {*}${gvars::-command}
+		    #::utils::debug INFO "All signals sent, restarting process"
+		    #exec::run -keepblanks -raw -- {*}${gvars::-command}
 		}
 	    } else {
 		set respit [lindex ${gvars::-kill} [expr {$i+1}]]
@@ -281,7 +282,7 @@ proc ::concocter::hook { cspec } {
 #
 # Side Effects:
 #       (re)start the process under our control
-proc ::concocter::loop { next { hook ""} } {
+proc ::concocter::loop { nexts {hook ""} {idx 0}} {
     variable gvars
     
     # We force the update of the variables once and only once, i.e. the first
@@ -290,14 +291,20 @@ proc ::concocter::loop { next { hook ""} } {
     set gvars::firsttime 0
     
     # Reschedule a change at once since we might wait infinitely below.
+    set next [lindex $nexts $idx]
     if { $next > 0 } {
-        after $next [namespace code [list loop $next $hook]]
+        set next [expr {int(1000*$next)}]
+        if { $idx < [llength $nexts]-1} {
+            incr idx
+        }
+        after $next [namespace code [list loop $nexts $hook $idx]]
+
+        # Call external hook command
+        if { [hook $hook] } {
+            set forceupdate 1
+        }
     }
     
-    # Call external hook command
-    if { [hook $hook] } {
-        set forceupdate 1
-    }
 
     # Now perform a big update of variables and output files, and start the
     # process under our control once and only once or arrange to (re)start it.
