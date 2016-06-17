@@ -71,15 +71,14 @@ if { [::utils::getopt opts -h] } {
 # Extract list of command-line options into array that will contain
 # program state.  The description array contains help messages, we get
 # rid of them on the way into the main program's status array.
-array set CCT {
-}
+array set CCT {}
 foreach { arg val dsc } $prg_args {
     set CCT($arg) $val
 }
 for { set eaten "" } {$eaten ne $opts } {} {
     set eaten $opts
     foreach opt [array names CCT -*] {
-        ::utils::getopt opts $opt CCT($opt) $CCT($opt)
+        ::utils::pushopt opts $opt CCT
     }
 }
 

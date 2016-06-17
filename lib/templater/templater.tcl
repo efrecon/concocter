@@ -263,7 +263,7 @@ proc ::templater::config { t args } {
     upvar \#0 $t TEMPLATE
     
     foreach k [array names TPL -*] {
-	::utils::getopt args $k TEMPLATE($k) $TEMPLATE($k)
+	::utils::getopt args $k -value TEMPLATE($k) -default $TEMPLATE($k)
     }
     __init $t
 }
@@ -282,7 +282,7 @@ proc ::templater::new { args } {
     set TEMPLATE(mtime) ""
     
     foreach k [array names TPL -*] {
-	::utils::getopt args $k TEMPLATE($k) $TPL($k)
+	::utils::getopt args $k -value TEMPLATE($k) -default $TPL($k)
     }
 
     eval config $t $args

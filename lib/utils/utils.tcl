@@ -52,35 +52,64 @@ proc ::utils::UpVar {} {
 }
 
 
-# ::utils::getopt -- Quick and Dirty Options Parser
+# ::utils::getopt -- Quick options parser
 #
-#       Parses options, code comes from wiki
+#       Parses options (and their possible) values from an option list. The
+#       parser provides full introspection. The parser accepts itself a number
+#       of dash-led options, which are:
+#	-value   Which variable to store the value given to the option in.
+#	-option  Which variable to store which option (complete) was parsed.
+#	-default Default value to give when option not present.
 #
 # Arguments:
-#	arg1	descr
-#	arg2	descr
+#	_argv	Name of option list in caller's context
+#	name	Name of option to extract (first match, can be incomplete)
+#	args	Additional arguments
 #
 # Results:
-#       None.
+#       Returns 1 when a matching option was found and parsed away from the
+#       option list, 0 otherwise
 #
 # Side Effects:
-#       None.
-proc ::utils::getopt {_argv name {_var ""} {default ""}} {
-    upvar [UpVar] $_argv argv $_var var
+#       Modifies the option list to enable being run in loops.
+proc ::utils::getopt {_argv name args } {
+    # Get options to the option parsing procedure...
+    array set OPTS {
+	-value  ""
+	-option ""
+    }
+    array set OPTS $args
+    
+    # Access where the options are stored and possible where to store
+    # side-results.
+    upvar [UpVar] $_argv argv
+    if { $OPTS(-value) ne "" } {
+	upvar [UpVar] $OPTS(-value) var
+    }
+    if { $OPTS(-option) ne "" } {
+	upvar [UpVar] $OPTS(-option) opt
+    }
+    set opt "";  # Default is no option was extracted
     set pos [lsearch -regexp $argv ^$name]
     if {$pos>=0} {
 	set to $pos
-	if {$_var ne ""} {
+	set opt [lindex $argv $pos];  # Store the option we extracted
+	# Pick the value to the option, if relevant
+	if {$OPTS(-value) ne ""} {
 	    set var [lindex $argv [incr to]]
 	}
+	# Remove option (and possibly its value from list)
 	set argv [lreplace $argv $pos $to]
 	return 1
     } else {
 	# Did we provide a value to default?
-	if {[llength [info level 0]] == 5} {set var $default}
+	if { [info exists OPTS(-default)] } {
+	    set var $OPTS(-default)
+	}
 	return 0
     }
 }
+
 
 
 proc ::utils::pullopt {_argv _opts} {
@@ -135,20 +164,23 @@ proc ::utils::pullopt {_argv _opts} {
 proc ::utils::pushopt { _argv opt _ary } {
     upvar $_argv argv $_ary ARY
     set modified [list]
-    if { [::utils::getopt argv $opt< prepend] } {
-	set ARY($opt) $prepend\ $ARY($opt)
-	::utils::debug 5 "Prepended '$prepend' to argument $opt ==> '$ARY($opt)'"
-        lappend modified $opt
+    
+    while { [getopt argv $opt -value val -option extracted] } {
+	if { [string index $extracted end] eq "<" } {
+	    set ARY($opt) $val\ $ARY($opt)
+	    ::utils::debug 5 "Prepended '$val' to argument $opt ==> '$ARY($opt)'"
+	    lappend modified $opt
+	} elseif { [string index $extracted end] eq ">" } {
+	    set ARY($opt) $ARY($opt)\ $val
+	    ::utils::debug 5 "Appended '$val' to argument $opt ==> '$ARY($opt)'"
+	    lappend modified $opt
+	} else {
+	    set ARY($opt) $val
+	    ::utils::debug 5 "Set argument $opt to '$ARY($opt)'"
+	    lappend modified $opt
+	}
     }
-    if { [::utils::getopt argv $opt> append] } {
-	set ARY($opt) $ARY($opt)\ $append
-	::utils::debug 5 "Appended '$append' to argument $opt ==> '$ARY($opt)'"
-        lappend modified $opt
-    }
-    if { [::utils::getopt argv $opt ARY($opt)] } {
-	::utils::debug 5 "Set argument $opt to '$ARY($opt)'"
-        lappend modified $opt
-    }
+    
     return [lsort -unique $modified]
 }
 
