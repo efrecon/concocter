@@ -27,7 +27,8 @@ proc ::concocter::var::plugin::docker::update { var location } {
         # a set of variables (see below) using this variable name as prefix and
         # describing the current content of all containers at the docker daemon.
         set containers [list]
-        foreach cspec [$daemon containers] {
+        set raw [$daemon containers]
+        foreach cspec $raw {
             # Truncate the full name to the first 12 characters as docker itself
             # uses to. This will keep the names of the variables to some decent
             # size... We will create, below, a large number of variables which
@@ -47,18 +48,12 @@ proc ::concocter::var::plugin::docker::update { var location } {
             set v [new $VAR(-name)-${cid}-name]
             set updated [expr $updated||[setvar $v [string trimleft $cname /]]]
 
-            # Get network information when we have a bridge, we ought to have a
-            # solution for the other types of networks.
-            set networks [dict get $cspec NetworkSettings Networks]
-            if { [dict exists $networks bridge] } {
-                set v [new $VAR(-name)-${cid}-ip]
-                set updated [expr $updated||[setvar $v [dict get $networks bridge IPAddress]]]
-                set v [new $VAR(-name)-${cid}-mac]
-                set updated [expr $updated||[setvar $v [dict get $networks bridge MacAddress]]]                
-            } else {
-                set v [new $VAR(-name)-${cid}-ip]
-                set v [new $VAR(-name)-${cid}-mac]
-            }
+            # Get network information
+            foreach {ip mac} [Network [dict get $cspec Id] $raw] break
+            set v [new $VAR(-name)-${cid}-ip]
+            set updated [expr $updated||[setvar $v $ip]]
+            set v [new $VAR(-name)-${cid}-mac]
+            set updated [expr $updated||[setvar $v $mac]]                
 
             # Create a list of the external ports, add the type of the port
             # after a slash.
@@ -123,4 +118,29 @@ proc ::concocter::var::plugin::docker::update { var location } {
     }
     
     return $updated
+}
+
+
+proc ::concocter::var::plugin::docker::Network { cid raw } {
+    set ip ""
+    set mac ""
+    foreach cspec $raw {
+        if { [dict get $cspec Id] eq $cid } {
+            # This only covers the netmode "default" (i.e. bridge) and when
+            # using the network of another container. We should cover all the
+            # other cases, incl. host network.
+            set networks [dict get $cspec NetworkSettings Networks]
+            set netmode [dict get $cspec HostConfig NetworkMode]
+            if { [dict exists $networks bridge] } {
+                set ip [dict get $networks bridge IPAddress]
+                set mac [dict get $networks bridge MacAddress]                
+            } elseif { [string match container:* $netmode] } {
+                foreach {x other} [split $netmode ":"] break
+                return [Network $other $raw]
+            } else {
+            }            
+        }
+    }
+    
+    return [list $ip $mac]
 }
