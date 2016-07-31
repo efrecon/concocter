@@ -15,6 +15,9 @@ proc ::concocter::var::plugin::stats::update { var location } {
     set location [::utils::resolve $location]
     ::utils::debug DEBUG "Getting statistics for $location"
     if { [catch {file stat $location stats} err] == 0 } {
+        if { $stats(type) eq "directory" } {
+            set stats(files) [glob -directory $location -nocomplain -tails -- *]
+        }
         set updated [setvar $var [array get stats]]
     } else {
         ::utils::debug ERROR "Cannot get statistics for $location: $err"
