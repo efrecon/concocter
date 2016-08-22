@@ -12,6 +12,7 @@ namespace eval ::concocter {
     # from outside.
     namespace eval gvars {
         variable firsttime 1;  # First run marker
+        variable loop "";      # Timer identifier for main loop
         variable -command  {}; # Program to execute
         variable -dryrun   0;  # Don't run anything
         variable -kill     {15 500 15 1000 15 1000 9 3000}
@@ -103,13 +104,14 @@ proc ::concocter::update { vars { force off } } {
 # Arguments:
 #	i	Index within the -kill command-line list (even!)
 #	here	Should we test if the process still is present?
+#	capture	Command to call to capture output log lines
 #
 # Results:
 #       None.
 #
 # Side Effects:
 #       Send signals to the process under our control in turns.
-proc ::concocter::Killer { i {here 0}} {
+proc ::concocter::Killer { i {here 0} {capture {}}} {
     variable gvars
     
     # Check if we have a running command right now
@@ -164,19 +166,92 @@ proc ::concocter::Killer { i {here 0}} {
 	    
 		# Pick up the respit period, sleep for that time and arrange to try
 		# sending the next signal in the list.
-		after $respit [namespace code [list Killer [expr {$i+2}] $deadtest]]
+		after $respit [namespace code [list Killer [expr {$i+2}] $deadtest $capture]]
 	    }
 	} else {
 	    # The process isn't there, we can simply restart it.
-	    exec::run -keepblanks -raw -- {*}${gvars::-command}
+            if { [llength $capture] } {
+                exec::run -keepblanks -raw -capture [namespace code [list WatchDog $capture]] -- {*}${gvars::-command}
+            } else {
+                exec::run -keepblanks -raw -- {*}${gvars::-command}
+            }
 	}
     } else {
-	# The process isn't there, we can simply restart it.
-	exec::run -keepblanks -raw -- {*}${gvars::-command}
+        # The process isn't there, we can simply restart it.
+        if { [llength $capture] } {
+            exec::run -keepblanks -raw -capture [namespace code [list WatchDog $capture]] -- {*}${gvars::-command}
+        } else {
+            exec::run -keepblanks -raw -- {*}${gvars::-command}
+        }
     }
 }
 
-proc ::concocter::hook { cspec } {
+
+# ::concocter::WatchDog -- Log lines watchdog.
+#
+#       This procedure called with every captured log lines that is output by
+#       the program that is under our control, whenever necessary. When the
+#       command that is associated to the hook (see ::concocter::hook) returns a
+#       positive value, the program under our control will be restarted.
+#
+# Arguments:
+#	cspec	See ::concocter::hook
+#	fd	Where the line was output (stdout or stderr)
+#	line	Log line that was captured.
+#
+# Results:
+#       None.
+#
+# Side Effects:
+#       Restart or start signals to process under our control
+proc ::concocter::WatchDog { cspec fd line } {
+    variable gvars
+    
+    set status [hook $cspec DEBUG $fd $line]
+    if { $status } {
+        if { $gvars::loop ne "" } {
+            # Simulate that this was the first time to check all variables again
+            # and rerun the main loop, which we've just captured from the
+            # scheduled command.
+            set gvars::firsttime 1
+            set cmd [lindex [after info $gvars::loop] 0];  # Capture after'd command
+            eval {*}$cmd
+        }
+    }
+}
+
+
+# ::concocter::hook -- Call extern hook.
+#
+#       This procedure can call external hooks to decide whether the program
+#       under our control should be restarted or not. This only implements
+#       decision-making, restarting behaviour is elsewhere. There are three
+#       different sorts of command specifications. In its simplest form, this is
+#       any external command (not tcl), which will be a command-line
+#       specification to which the additional arguments from the procedure call
+#       are added. Its return value will be the decision to make. Whenever this
+#       is a tcl script, if it contains xxx@ leading the script path, xxx will
+#       be considered as a procedure (and arguments) within that script. The
+#       name of the procedure is separated from fixed arguments using ! marks.
+#       Additional arguments (args variable) are passed to the procedure after
+#       these. In that case, one interpreter will be created and the procedure
+#       will be called on and on as necessary (which enables to keep state in
+#       the interpreter). If no @ sign was found, interpreter creation will
+#       occur each time. The arguments to the script on the command line are
+#       passed as argv/argc pairs to those interpreters.
+#
+# Arguments:
+#	cspec	See above
+#	lvl	Debug level at which to output execution messages
+#	args	Arguments (dynamic) passed to program or procedure.
+#
+# Results:
+#       negative boolean whenever the program shouldn't be restarted, positive
+#       otherwise
+#
+# Side Effects:
+#       Might call external program!
+proc ::concocter::hook { cspec lvl args } {
     variable gvars
     
     set cspec [string trim $cspec]
@@ -200,9 +275,9 @@ proc ::concocter::hook { cspec } {
             # Create the interpreter once, we'll reuse it
             if { ![dict exists $gvars::interps $script] } {
                 set itrp [interp create]
-                $itrp eval set ::argv0 $prg
-                $itrp eval set ::argv [lrange $cspec 1 end]
-                $itrp eval set ::argc [llength [lrange $cspec 1 end]]
+                $itrp eval [list set ::argv0 $prg]
+                $itrp eval [list set ::argv [lrange $cspec 1 end]]
+                $itrp eval [list set ::argc [llength [lrange $cspec 1 end]]]
                 if { [catch {$itrp eval source [::utils::resolve $script]} res] != 0 } {
                     ::utils::debug ERROR "Cannot load script from $script: $res"
                     interp delete $itrp
@@ -216,10 +291,10 @@ proc ::concocter::hook { cspec } {
             # if necessary) and use the return code of the procedure.
             if { [dict exists $gvars::interps $script] } {
                 set itrp [dict get $gvars::interps $script]
-                set call [split [string range $cspec 0 [expr {$arobas-1}]] !]
-                ::utils::debug INFO "Executing hook $call from $script for update forcing"
+                set call [concat [split [string range $cspec 0 [expr {$arobas-1}]] !] $args]
+                ::utils::debug $lvl "Executing hook $call from $script for update forcing"
                 try {
-                    set status [$itrp eval {*}$call]
+                    set status [$itrp eval $call]
                 } on error {res} {
                     ::utils::debug WARN "Cannot execute $call in interp: $res"
                     set status 0
@@ -231,13 +306,14 @@ proc ::concocter::hook { cspec } {
             # When the specification is only a tcl script, we'll source it in a
             # new interpreter on and on. We use the return value of the last
             # command as the status.
-            ::utils::debug INFO "Executing hook from $cspec for update forcing"
+            ::utils::debug $lvl "Executing hook from $cspec for update forcing"
             set itrp [interp create]
-            $itrp eval set ::argv0 $prg
-            $itrp eval set ::argv [lrange $cspec 1 end]
-            $itrp eval set ::argc [llength [lrange $cspec 1 end]]
+            set arglist [concat [lrange $cspec 1 end] $arg]
+            $itrp eval [list set ::argv0 $prg]
+            $itrp eval [list set ::argv $arglist]
+            $itrp eval [list set ::argc [llength $arglist]]
             try {
-                set status [$itrp eval source [::utils::resolve $prg]]
+                set status [$itrp eval [list source [::utils::resolve $prg]]]
             } on error {res} {
                 ::utils::debug ERROR "Cannot execute Tcl code at $cspec: $res"
                 set status 0
@@ -250,9 +326,9 @@ proc ::concocter::hook { cspec } {
     } else {
         # Otherwise, we execute the command and use its result to know what to
         # do.
-        ::utils::debug INFO "Executing hook at $cspec for update forcing"
+        ::utils::debug $lvl "Executing hook at $cspec for update forcing"
         try {
-            set res [exec -ignorestderr -- {*}$cspec]
+            set res [exec -ignorestderr -- {*}[concat $cspec $args]]
             set status 0
         } trap CHILDSTATUS {res options} {
             set status [lindex [dict get $options -errorcode] 2]
@@ -275,14 +351,17 @@ proc ::concocter::hook { cspec } {
 #       to the output files have occured. 
 #
 # Arguments:
-#	next	When to schedule next update loop (negative for one shot)
+#	nexts	When to schedule next update loop (negative for one shot)
+#	hook	Command to call for restart decision at each loop
+#	watchdog	Command to call with each log line.
+#	idx	Index in nexts periods.
 #
 # Results:
 #       None.
 #
 # Side Effects:
 #       (re)start the process under our control
-proc ::concocter::loop { nexts {hook ""} {idx 0}} {
+proc ::concocter::loop { nexts {hook ""} {watchdog ""} {idx 0}} {
     variable gvars
     
     # We force the update of the variables once and only once, i.e. the first
@@ -297,10 +376,13 @@ proc ::concocter::loop { nexts {hook ""} {idx 0}} {
         if { $idx < [llength $nexts]-1} {
             incr idx
         }
-        after $next [namespace code [list loop $nexts $hook $idx]]
+        if { $gvars::loop ne "" } {
+            catch {after cancel $gvars::loop}
+        }
+        set gvars::loop [after $next [namespace code [list loop $nexts $hook $watchdog $idx]]]
 
         # Call external hook command
-        if { [hook $hook] } {
+        if { [hook $hook INFO] } {
             set forceupdate 1
         }
     }
@@ -321,7 +403,7 @@ proc ::concocter::loop { nexts {hook ""} {idx 0}} {
                     exec {*}${gvars::-command}
                 } else {
                     # Check if we have a running command right now
-                    Killer 0 1
+                    Killer 0 1 $watchdog
                 }
             } else {
                 ::utils::debug WARN "Nothing to execute!"

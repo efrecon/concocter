@@ -127,7 +127,7 @@ path and lead that reference with an `@`-sign.
 The path to the program placed under our control and all its arguments is
 considered to be anything that follows the double dash `--` at the command-line.
 When `-update` is positive, it should specify the number of seconds at which to
-check (and update) the values of the variables. Whenever, any variable changes,
+check (and update) the values of the variables. Whenever any variable changes,
 all templated outputs will be regenerated and the program will be sent a series
 of signal in sequence, as specified using the `-kill` option. The value of this
 option should be an even list where the first argument is the name/number of the

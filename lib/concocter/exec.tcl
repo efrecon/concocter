@@ -77,6 +77,12 @@ proc ::concocter::exec::LineRead { c fd } {
 	} elseif { $CMD(relay) } {
 	    puts $fd $line
 	}
+
+        if { [llength $CMD(capture)] } {
+            if { [catch {eval [linsert $CMD(capture) end $fd $line]} err] } {
+                ::utils::debug WARN "Could not forward line to capturing command: $err"
+            }
+        }
     }
 
     # On EOF, we stop this very procedure to be triggered.  If there
@@ -128,6 +134,7 @@ proc ::concocter::exec::run { args } {
     set CMD(back) [::utils::getopt opts -return]
     set CMD(outerr) [::utils::getopt opts -stderr]
     set CMD(relay) [::utils::getopt opts -raw]
+    ::utils::getopt opts -capture CMD(capture) ""
     set CMD(done) 0
     set CMD(result) {}
 

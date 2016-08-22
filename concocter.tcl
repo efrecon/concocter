@@ -19,6 +19,7 @@ set prg_args {
     -outputs  ""    "List of file paths and their templates, preceed with @-sign for file indirection"
     -update   "-1"  "Sequence of periods at which we check for variables, in seconds (negative to turn off)"
     -external ""    "External command to run at update interval, non-zero==force updating"
+    -watchdog ""    "External command to send output from concocted command to, non-zero==force updating"
     -dryrun   "off" "Dry-run, do not execute, just perform templating"
     -kill     "15 500 15 1000 15 1000 9 3000" "Sequence of signals and respit periods"
     -verbose  "templater 3 utils 2 * 5"     "Verbosity specification for internal modules"
@@ -147,6 +148,6 @@ foreach opt [list -dryrun -kill -access] {
 }
 
 # Recurrent (re)start of process whenever changes are detected or one shot.
-::concocter::loop $CCT(-update) $CCT(-external)
+::concocter::loop $CCT(-update) $CCT(-external) $CCT(-watchdog)
 
 vwait forever
