@@ -21,7 +21,7 @@ about configuration changes, if possible.
 
 ## Variables
 
-`concocter` supports three different types of variables:
+`concocter` supports four different types of variables:
 
   - Variables which specification starts with a `@` are understood as the
     content of a (possibly) remote resource. All characters that follow the `@`
@@ -35,6 +35,13 @@ about configuration changes, if possible.
     Within that expression, any string surrounded by `%` is considered the name
     of a variable and the whole string will be replaced by the content of that
     variable before the expression is evaluated.
+    
+  - Variables which specification starts with a `^` are understood as the
+    gathering of file statistics for the path formed by the remaining of the
+    specification. The variable will be a Tcl array reflecting the regular
+    calling of `file stat` on the path. Whenever the path is a directory, the
+    array will also contain an index called `files` that will contain the list
+    of files directly in the directory (no-recursion).
 
   - Otherwise, the specification will be the content of the variable. Within
     that specification, any string surrounded by `%` is considered the name of a
@@ -193,6 +200,14 @@ to this core name:
     container.
   - For each label, a dash, the keyword `label`, another dash and the name of
     the label will also lead to a new variable.
+
+
+## Implementation Notes
+
+The different variable types that are recognised by `concocter` are driven by a
+set of plugins to maximise flexibility. The matching between the variable
+specifications and the plugins to use is driven by the file called `plugins.spc`
+in the main implementation of the library.
 
 
 ## Test and Example
