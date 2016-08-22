@@ -43,6 +43,11 @@ about configuration changes, if possible.
     array will also contain an index called `files` that will contain the list
     of files directly in the directory (no-recursion).
 
+  - Variables which specification starts with a `!` are understood as an
+    external process to execute. The result of the process will be set to the
+    content of the variable. At present, there is no protection whatsoever
+    against malicious usage, so you should use this facility with caution. 
+
   - Otherwise, the specification will be the content of the variable. Within
     that specification, any string surrounded by `%` is considered the name of a
     variable and it will be replaced by the content of that variable before the
