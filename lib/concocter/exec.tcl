@@ -4,8 +4,15 @@ namespace eval ::concocter::exec {
     variable version 0.1
     namespace eval command {};  # This will host all commands information
     namespace eval gvars {
+        variable signalling 0; # Forward signals (need Tclx see require below)
         variable generator 0;  # Generator for identifiers
     }
+}
+
+# Load Tclx whenever available to properly forward signals (if possible)
+if { [catch {package require Tclx} ver] == 0 } {
+    ::utils::debug INFO "Will properly forward signals using Tclx v $ver"
+    set ::concocter::exec::gvars::signalling 1
 }
 
 # ::POpen4 -- Pipe open
@@ -104,6 +111,24 @@ proc ::concocter::exec::running {} {
 }
 
 
+proc ::concocter::exec::Signal { c signal through self } {
+    upvar \#0 $c CMD
+
+    ::utils::debug NOTICE "Signal $signal received"
+    if { $through } {
+        ::utils::debug DEBUG "Passing signal $signal through to $CMD(pid)"
+        catch {kill $signal $CMD(pid)}
+    }
+    
+    if { $self } {
+        ::utils::debug DEBUG "Executing default behaviour for $signal on ourselves"
+        signal default $signal
+        catch {kill $signal [pid]}
+        signal trap $signal [namespace code [list Signal $c %S $through $self]]
+    }
+}
+
+
 proc ::concocter::exec::run { args } {
     variable gvars
     
@@ -153,6 +178,15 @@ proc ::concocter::exec::run { args } {
         lassign [POpen4 {*}$args] CMD(pid) CMD(stdin) CMD(stdout) CMD(stderr)
         fileevent $CMD(stdout) readable [namespace code [list LineRead $c stdout]]
         fileevent $CMD(stderr) readable [namespace code [list LineRead $c stderr]]
+    }
+    if { $gvars::signalling } {
+        foreach {signal through self} [list HUP 1 1 INT 1 1 QUIT 1 1 STOP 1 1 ABRT 1 1 KILL 0 1 TERM 0 1 CONT 1 1 USR1 1 0 USR2 1 0] {
+            if { [catch {signal get $signal} settings] == 0 } {
+                signal trap $signal [namespace code [list Signal $c %S $through $self]]
+            } else {
+                ::utils::debug WARN "Cannot properly handle signal $signal: $settings"
+            }
+        }
     }
     ::utils::debug TRACE "Started $CMD(command), running at $CMD(pid)"
     vwait ${c}(done);   # Wait for command to end
