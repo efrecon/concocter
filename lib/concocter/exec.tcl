@@ -180,7 +180,7 @@ proc ::concocter::exec::run { args } {
         fileevent $CMD(stderr) readable [namespace code [list LineRead $c stderr]]
     }
     if { $gvars::signalling } {
-        foreach {signal through self} [list HUP 1 1 INT 1 1 QUIT 1 1 STOP 1 1 ABRT 1 1 KILL 0 1 TERM 0 1 CONT 1 1 USR1 1 0 USR2 1 0] {
+        foreach {signal through self} [list HUP 1 1 INT 1 1 QUIT 1 1 ABRT 1 1 TERM 0 1 CONT 1 1 USR1 1 0 USR2 1 0] {
             if { [catch {signal get $signal} settings] == 0 } {
                 signal trap $signal [namespace code [list Signal $c %S $through $self]]
             } else {
