@@ -9,7 +9,7 @@ namespace eval ::utils {
 	    idFormat       7
 	    verbose        {* 5}
 	    dbgfd          stderr
-	    dateLogHeader  "\[%Y%m%d %H%M%S\] \[%pkg%\] "
+	    dateLogHeader  "\[%Y%m%d %H%M%S\] \[%lvl%\] \[%pkg%\] "
 	    comments       "\#"
 	    verboseTags    {1 CRITICAL 2 ERROR 3 WARN 4 NOTICE 5 INFO 6 DEBUG 7 TRACE}
 	    subst          {% @ ~}
@@ -216,7 +216,8 @@ proc ::utils::Mapper { _lst args } {
 proc ::utils::dbgfmt { lvl pkg output } {
     variable UTILS
 
-    set hdr [string map [Mapper "" pkg $pkg] $UTILS(dateLogHeader)]
+    set lvl [string tolower [dict get $UTILS(verboseTags) $lvl]]
+    set hdr [string map [Mapper "" pkg $pkg lvl $lvl] $UTILS(dateLogHeader)]
     set hdr [clock format [clock seconds] -format $hdr]
     return ${hdr}${output}
 }
