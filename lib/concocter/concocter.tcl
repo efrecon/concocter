@@ -367,6 +367,7 @@ proc ::concocter::loop { nexts {hook ""} {watchdog ""} {idx 0}} {
     # We force the update of the variables once and only once, i.e. the first
     # time that the program is run.
     set forceupdate [expr {$gvars::firsttime || [string is true ${gvars::-force}]}]
+    set firsttime $gvars::firsttime
     set gvars::firsttime 0
     
     # Reschedule a change at once since we might wait infinitely below.
@@ -393,7 +394,7 @@ proc ::concocter::loop { nexts {hook ""} {watchdog ""} {idx 0}} {
     # Note that the implementation of the one-shot process start replaces this
     # process by the process specified as the process under our control.
     set vars [var::vars]
-    if { [update $vars $forceupdate] > 0 } {
+    if { [update $vars $forceupdate] > 0 || $firsttime } {
         if { [string is true ${gvars::-dryrun}]} {
 	    ::utils::debug NOTICE "Would have executed: ${gvars::-command}"
 	} else {
