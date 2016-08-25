@@ -278,7 +278,10 @@ proc ::utils::debug { lvl output { pkg "" } } {
 			puts stderr "Cannot callback external log command: $err"
 		    }
 		} else {
-		    puts $UTILS(dbgfd) [dbgfmt $lvl $pkg $output]
+		    set line [dbgfmt $lvl $pkg $output]
+		    if { $line ne "" } {
+			puts $UTILS(dbgfd) $line
+		    }
 		}
 	    }
 	    return
