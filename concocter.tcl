@@ -38,7 +38,7 @@ set prg_args {
 # Add RESTish API only if we can find an HTTP server implementation
 if { [catch {package require minihttpd} ver] == 0 } {
     lappend prg_args \
-	-port "8080" "Port number for RESTish API"
+	-port "-1" "Port number for RESTish API"
 }
 
 # ::help:dump -- Dump help
