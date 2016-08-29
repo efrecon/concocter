@@ -17,6 +17,7 @@ proc ::concocter::var::vars {} {
     return [lsort [info vars [namespace current]::var::*]]    
 }
 
+
 proc ::concocter::var::find { name } {
     foreach v [vars] {
         upvar \#0 $v VAR

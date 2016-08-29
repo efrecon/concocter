@@ -3,7 +3,14 @@
 set resolvedArgv0 [file dirname [file normalize $argv0/___]];  # Trick to resolve last symlink
 set appname [file rootname [file tail $resolvedArgv0]]
 set rootdir [file normalize [file dirname $resolvedArgv0]]
-lappend auto_path [file join $rootdir .. lib] [file join $rootdir lib]
+foreach ldir [list [file join $rootdir .. lib] \
+		    [file join $rootdir lib] \
+		    [file join $rootdir .. lib til] \
+		    [file join $rootdir lib til]] {
+    if { [file isdirectory $ldir] } {
+	lappend auto_path $ldir
+    }
+}
 
 package require Tcl 8.6
 package require utils
@@ -26,6 +33,12 @@ set prg_args {
     -access   {}    "List of directories or files that templaters can access"
     -h        ""    "Print this help and exit"
     -plugins  "@%maindir%/lib/concocter/plugins.spc" "Plugin configuration"
+}
+
+# Add RESTish API only if we can find an HTTP server implementation
+if { [catch {package require minihttpd} ver] == 0 } {
+    lappend prg_args \
+	-port "8080" "Port number for RESTish API"
 }
 
 # ::help:dump -- Dump help
@@ -145,6 +158,11 @@ foreach ospec $CCT(-outputs) {
 ::concocter::settings -command $argv
 foreach opt [list -dryrun -kill -access] {
     ::concocter::settings $opt $CCT($opt)
+}
+
+if { [info exists CCT(-port)] && $CCT(-port) > 0 } {
+    package require concocter::rest
+    ::concocter::rest::server $CCT(-port)
 }
 
 # Recurrent (re)start of process whenever changes are detected or one shot.

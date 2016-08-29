@@ -11,5 +11,6 @@
 package ifneeded concocter 0.1 [list source [file join $dir concocter.tcl]]
 package ifneeded concocter::exec 0.1 [list source [file join $dir exec.tcl]]
 package ifneeded concocter::output 0.1 [list source [file join $dir output.tcl]]
+package ifneeded concocter::rest 0.1 [list source [file join $dir rest.tcl]]
 package ifneeded concocter::sys 0.1 [list source [file join $dir sys.tcl]]
 package ifneeded concocter::var 0.1 [list source [file join $dir var.tcl]]

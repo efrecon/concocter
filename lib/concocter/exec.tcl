@@ -112,10 +112,9 @@ proc ::concocter::exec::running {} {
 
 
 proc ::concocter::exec::Signal { c signal through self } {
-    upvar \#0 $c CMD
-
     ::utils::debug NOTICE "Signal $signal received"
-    if { $through } {
+    if { $through && [info exists $c] } {
+        upvar \#0 $c CMD
         ::utils::debug DEBUG "Passing signal $signal through to $CMD(pid)"
         catch {kill $signal $CMD(pid)}
     }

@@ -209,14 +209,21 @@ proc ::concocter::WatchDog { cspec fd line } {
     
     set status [hook $cspec DEBUG $fd $line]
     if { $status } {
-        if { $gvars::loop ne "" } {
-            # Simulate that this was the first time to check all variables again
-            # and rerun the main loop, which we've just captured from the
-            # scheduled command.
-            set gvars::firsttime 1
-            set cmd [lindex [after info $gvars::loop] 0];  # Capture after'd command
-            eval {*}$cmd
-        }
+        reload
+    }
+}
+
+
+proc ::concocter::reload { } {
+    variable gvars
+    
+    if { $gvars::loop ne "" } {
+        # Simulate that this was the first time to check all variables again
+        # and rerun the main loop, which we've just captured from the
+        # scheduled command.
+        set gvars::firsttime 1
+        set cmd [lindex [after info $gvars::loop] 0];  # Capture after'd command
+        eval {*}$cmd
     }
 }
 
@@ -416,7 +423,7 @@ proc ::concocter::loop { nexts {hook ""} {watchdog ""} {idx 0}} {
 }
 
 
-proc ::concocter::settings {args} {
+proc ::concocter::settings { args } {
     variable gvars
     
     if { [llength $args] == 1 } {
