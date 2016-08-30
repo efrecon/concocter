@@ -95,7 +95,7 @@ proc ::concocter::var::update { var } {
     foreach {ptn cmd} $gvars::plugins {
         if { $VAR(-source) ne "" && [string match $ptn $VAR(-source)] } {
             set src [string map [snapshot] $VAR(-source)]
-            if { [catch {eval [list $cmd $var $src]} res] } {
+            if { [catch {eval [list $cmd $var $src [Hints $VAR(-origin)]]} res] } {
                 ::utils::debug WARN "Cannot update $var from $src through plugin $cmd: $res"
             } else {
                 return $res
@@ -103,6 +103,18 @@ proc ::concocter::var::update { var } {
         }
     }
     return 0
+}
+
+
+proc ::concocter::var::Hints { path } {
+    
+    if { $path eq "" } {
+        return [dict create dir "" dirname "" rootname ""]
+    }
+    return [dict create \
+                dir [file dirname $path] \
+                dirname [file dirname $path] \
+                rootname [file rootname [file tail $path]]]
 }
 
 
@@ -124,7 +136,7 @@ proc ::concocter::var::plugin { ptn path } {
 }
 
 
-proc ::concocter::var::new { name { src "" } {dft ""}} {
+proc ::concocter::var::new { name { src "" } {dft ""} {origin ""}} {
     variable gvars
     
     set var [find $name]
@@ -133,6 +145,7 @@ proc ::concocter::var::new { name { src "" } {dft ""}} {
         upvar \#0 $var VAR
         set VAR(-name) $name
         set VAR(-source) $src
+        set VAR(-origin) $origin
         set VAR(value) $dft
         if { $src eq "" } {
             ::utils::debug DEBUG "Created internal variable $name (default: $dft)"    

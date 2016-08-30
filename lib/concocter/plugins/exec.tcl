@@ -6,14 +6,14 @@ namespace eval ::concocter::var::plugin::exec {
 
 # Execute the location as an external command. There is currently no protection
 # against malicious usage.
-proc ::concocter::var::plugin::exec::update { var location } {
+proc ::concocter::var::plugin::exec::update { var location {resolution {}} } {
     variable gvals
     
     upvar \#0 $var VAR
     
     set updated 0
     set location [string trim [string range $location 1 end]]
-    set location [::utils::resolve $location]
+    set location [::utils::resolve $location $resolution]
     ::utils::debug DEBUG "Executing $location"
     if { [catch {eval exec -- $location} res] == 0 } {
         set updated [setvar $var $res]

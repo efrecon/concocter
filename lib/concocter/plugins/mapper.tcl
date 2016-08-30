@@ -7,6 +7,6 @@ namespace eval ::concocter::var::plugin::mapper {
 # name is enclosed by %, but also environment variables, the one from the
 # tcl_platform array and supports defaulting value when the variable does not
 # exist.
-proc ::concocter::var::plugin::mapper::update { var xpr } {
+proc ::concocter::var::plugin::mapper::update { var xpr {resolution {}}} {
     return [setvar $var [::utils::resolve $xpr [snapshot * ""]]]
 }

@@ -130,6 +130,7 @@ foreach pspec $CCT(-plugins) {
 # Read content of variable indirection file and create global variables in the
 # ::var namespace that will hold information for the variables that we have
 # created.
+set fname ""
 if { [string index $CCT(-vars) 0] eq "@" } {
     set fname [::utils::resolve [string trim [string range $CCT(-vars) 1 end]]]
     ::utils::debug INFO "Reading content of $fname for the variables"
@@ -137,7 +138,7 @@ if { [string index $CCT(-vars) 0] eq "@" } {
 }
 foreach vspec $CCT(-vars) {
     lassign $vspec k v dft
-    ::concocter::var::new $k $v $dft
+    ::concocter::var::new $k $v $dft $fname
 }
 
 

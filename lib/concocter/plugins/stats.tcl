@@ -4,14 +4,14 @@ namespace eval ::concocter::var::plugin::stats {
     namespace import [namespace parent [namespace parent]]::setvar
 }
 
-proc ::concocter::var::plugin::stats::update { var location } {
+proc ::concocter::var::plugin::stats::update { var location {resolution {}}} {
     variable gvals
     
     upvar \#0 $var VAR
     
     set updated 0
     set location [string trim [string range $location 1 end]]
-    set location [::utils::resolve $location]
+    set location [::utils::resolve $location $resolution]
     ::utils::debug DEBUG "Getting statistics for $location"
     if { [catch {file stat $location stats} err] == 0 } {
         if { $stats(type) eq "directory" } {

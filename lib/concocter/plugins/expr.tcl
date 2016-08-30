@@ -2,7 +2,7 @@ namespace eval ::concocter::var::plugin::expr {
     namespace import [namespace parent [namespace parent]]::setvar
 }
 
-proc ::concocter::var::plugin::expr::update { var xpr } {
+proc ::concocter::var::plugin::expr::update { var xpr {resolution {}}} {
     upvar \#0 $var VAR
     
     set updated 0
