@@ -121,7 +121,7 @@ foreach {opt dft} [list ssl2 0 ssl3 0 tls1 1 tls1.1 1 tls1.2 1] {
 	 }
     }
 }
-::utils::debug INFO "Using $cmd for establishing HTTPS connections"
+::utils::debug DEBUG "Using $cmd for establishing HTTPS connections"
 ::http::register https 443 $cmd
 
 # Read content of plugin specification file, if relevant, and register the
