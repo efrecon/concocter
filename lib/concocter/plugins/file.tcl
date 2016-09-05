@@ -1,5 +1,6 @@
 namespace eval ::concocter::var::plugin::file {
     namespace import [namespace parent [namespace parent]]::setvar
+    namespace import [namespace parent [namespace parent]]::snapshot    
 }
 
 proc ::concocter::var::plugin::file::update { var location {resolution {}}} {

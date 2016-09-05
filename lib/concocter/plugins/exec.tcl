@@ -2,6 +2,7 @@ namespace eval ::concocter::var::plugin::exec {
     namespace eval gvals {
     }
     namespace import [namespace parent [namespace parent]]::setvar
+    namespace import [namespace parent [namespace parent]]::snapshot    
 }
 
 # Execute the location as an external command. There is currently no protection

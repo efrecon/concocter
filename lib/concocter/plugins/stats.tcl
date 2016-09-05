@@ -2,6 +2,7 @@ namespace eval ::concocter::var::plugin::stats {
     namespace eval gvals {
     }
     namespace import [namespace parent [namespace parent]]::setvar
+    namespace import [namespace parent [namespace parent]]::snapshot    
 }
 
 proc ::concocter::var::plugin::stats::update { var location {resolution {}}} {
