@@ -85,7 +85,7 @@ proc ::concocter::update { vars { force off } } {
     # update. 
     if { $changes > 0 || [string is true $force] } {
         foreach out [output::outputs] {
-            if { [output::update $out] } {
+            if { [output::update $out [string is true $force]] } {
                 incr updated
             }
         }

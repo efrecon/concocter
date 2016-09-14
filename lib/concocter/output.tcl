@@ -30,7 +30,7 @@ proc ::concocter::output::outputs {} {
 #
 # Side Effects:
 #       None.
-proc ::concocter::output::update { out } {
+proc ::concocter::output::update { out { force 0 } } {
     upvar \#0 $out OUT
     
     # Construct a variable map for substitution of %-surrounded strings in
@@ -79,13 +79,29 @@ proc ::concocter::output::update { out } {
         ::templater::setvar $tpl $k $v
     }
     set res [::templater::render $tpl]
-    if { [catch {open $dst_path w} fd] == 0 } {
-        puts -nonewline $fd $res
-        close $fd
-        set updated 1
-    } else {
-        ::utils::debug ERROR "Cannot write to destination $dst_path"
+    
+    # Capture old content of file
+    set old ""
+    if { ! $force } {
+        if { [catch {open $dst_path r} fd] == 0 } {
+            set old [read $fd]
+            close $fd
+        }
     }
+    
+    # Update content of file only if it has changed or if we were forced to
+    # update
+    if { $force || (!$force && $old ne $res) } {
+        ::utils::debug NOTICE "Writing templated content to $dst_path"
+        if { [catch {open $dst_path w} fd] == 0 } {
+            puts -nonewline $fd $res
+            close $fd
+            set updated 1
+        } else {
+            ::utils::debug ERROR "Cannot write to destination $dst_path"
+        }
+    }
+    
     ::templater::delete $tpl
     
     return $updated
