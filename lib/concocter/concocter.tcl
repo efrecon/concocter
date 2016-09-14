@@ -97,6 +97,27 @@ proc ::concocter::update { vars { force off } } {
 }
 
 
+proc ::concocter::PID {} {
+    variable gvars
+    
+    # Check if we have a running command right now
+    set running [exec::running]
+    if { [llength $running] > 0 } {
+	set cmd [lindex $running 0]
+	upvar \#0 $cmd CMD
+    
+	# Test if the process is still present.
+        set processes [sys::processes]
+        ::utils::debug TRACE "Looking for $CMD(pid) within $processes"
+        if { [lsearch $processes $CMD(pid)] >= 0 } {
+            return $CMD(pid)
+        }
+    }
+    
+    return -1
+}
+
+
 # ::killer -- Sequentially kill the current process.
 #
 #       This procedure is meant to be sequentially called using after. It will
@@ -322,7 +343,7 @@ proc ::concocter::hook { cspec lvl args } {
             # command as the status.
             ::utils::debug $lvl "Executing hook from $cspec for update forcing"
             set itrp [interp create]
-            set arglist [concat [lrange $cspec 1 end] $arg]
+            set arglist [concat [lrange $cspec 1 end] $args]
             $itrp eval [list set ::argv0 $prg]
             $itrp eval [list set ::argv $arglist]
             $itrp eval [list set ::argc [llength $arglist]]
@@ -397,7 +418,7 @@ proc ::concocter::loop { nexts {hook ""} {watchdog ""} {idx 0}} {
         set gvars::loop [after $next [namespace code [list loop $nexts $hook $watchdog $idx]]]
 
         # Call external hook command
-        if { [hook $hook INFO] } {
+        if { [hook $hook INFO [PID]] } {
             set forceupdate 1
         }
     }
