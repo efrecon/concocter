@@ -18,6 +18,7 @@ namespace eval ::concocter {
         variable -kill     {15 500 15 1000 15 1000 9 3000}
         variable -force    0;  # Force update always (use for debugging)
         variable -access   {}; # List of directories/file accessible to templaters
+        variable -clamp    15; # Max default number of characters for clamping output
         variable interps   [dict create]
     }
 }
@@ -31,7 +32,7 @@ namespace eval ::concocter {
 #
 # Arguments:
 #	value	String value to clamp
-#	clamp	Max number of characters.
+#	clamp	Max number of characters (negative for module default, 0 for none)
 #	postfix	Postfix to append to long string to mark that they are longer
 #
 # Results:
@@ -40,8 +41,14 @@ namespace eval ::concocter {
 #
 # Side Effects:
 #       None.
-proc ::concocter::clamp {value {clamp 10} {postfix "..."}} {
-    if { [string length $value] > $clamp } {
+proc ::concocter::clamp {value {clamp -1} {postfix "..."}} {
+    variable gvars
+    
+    if { $clamp < 0 } {
+        set clamp ${gvars::-clamp}
+    }
+    
+    if { $clamp > 0 && [string length $value] > $clamp } {
         return [string range $value 0 $clamp]$postfix
     }
     return $value

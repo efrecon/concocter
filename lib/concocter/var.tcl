@@ -63,7 +63,7 @@ proc ::concocter::var::setvar { var value } {
     set VAR(value) $value
     set updated [expr {$VAR(value) ne $VAR(previous)}]
     if { $updated } {
-        ::utils::debug DEBUG "Updated variable $VAR(-name) to [[namespace parent]::clamp $VAR(value)]"    
+        ::utils::debug DEBUG "Updated variable $VAR(-name) to '[[namespace parent]::clamp $VAR(value)]'"
     }
     return $updated
 }
