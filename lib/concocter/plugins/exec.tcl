@@ -1,5 +1,5 @@
 namespace eval ::concocter::var::plugin::exec {
-    namespace eval gvals {
+    namespace eval gvars {
     }
     namespace import [namespace parent [namespace parent]]::setvar
     namespace import [namespace parent [namespace parent]]::snapshot    
@@ -15,11 +15,15 @@ proc ::concocter::var::plugin::exec::update { var location {resolution {}} } {
     set updated 0
     set location [string trim [string range $location 1 end]]
     set location [::utils::resolve $location $resolution]
-    ::utils::debug DEBUG "Executing $location"
-    if { [catch {eval exec -- $location} res] == 0 } {
-        set updated [setvar $var $res]
+    if { $location eq "" } {
+        ::utils::debug WARN "Nothing to execute to update content of $VAR(-name)"
     } else {
-        ::utils::debug ERROR "Cannot execute $location: $res"
+        ::utils::debug DEBUG "Executing $location to update content of $VAR(-name)"
+        if { [catch {eval exec -- $location} res] == 0 } {
+            set updated [setvar $var $res]
+        } else {
+            ::utils::debug ERROR "Cannot execute $location: $res"
+        }
     }
     return $updated
 }

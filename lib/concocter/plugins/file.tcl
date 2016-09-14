@@ -9,12 +9,16 @@ proc ::concocter::var::plugin::file::update { var location {resolution {}}} {
     set updated 0
     set location [string trim [string range $location 1 end]]
     set fname [::utils::resolve $location $resolution]
-    ::utils::debug DEBUG "Reading content of $VAR(-name) from $fname"
-    if { [catch {open $fname} fd] == 0 } {
-        set updated [setvar $var [read $fd]]
-        close $fd
+    if { $fname eq "" } {
+        ::utils::debug WARN "Empty filename to read content of $VAR(-name) from!"
     } else {
-        ::utils::debug ERROR "Cannot get value from $fname: $fd"                
+        ::utils::debug DEBUG "Reading content of $VAR(-name) from $fname"
+        if { [catch {open $fname} fd] == 0 } {
+            set updated [setvar $var [read $fd]]
+            close $fd
+        } else {
+            ::utils::debug ERROR "Cannot get value from $fname: $fd"                
+        }
     }
     
     return $updated
