@@ -40,6 +40,7 @@ proc ::concocter::exec::POpen4 { args } {
     } 
 
     set pid [exec {*}$args <@ $readIn >@ $writeOut 2>@ $writeErr &]
+    chan close $readIn
     chan close $writeOut
     chan close $writeErr
 
