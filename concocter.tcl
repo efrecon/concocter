@@ -11,6 +11,12 @@ foreach ldir [list [file join $rootdir .. lib] \
 	lappend auto_path $ldir
     }
 }
+foreach ldir [list [file join $rootdir .. lib toclbox] \
+		    [file join $rootdir lib toclbox]] {
+    if { [file isdirectory $ldir] } {
+	::tcl::tm::path add $ldir
+    }
+}    
 
 package require Tcl 8.6
 package require utils
