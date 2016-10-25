@@ -1,9 +1,9 @@
 package require Tcl 8.6;
 
-package require concocter::exec
+package require toclbox;
+
 package require concocter::var
 package require concocter::output
-package require concocter::sys
 
 namespace eval ::concocter {
     variable version 0.1
@@ -101,13 +101,13 @@ proc ::concocter::PID {} {
     variable gvars
     
     # Check if we have a running command right now
-    set running [exec::running]
+    set running [toclbox running]
     if { [llength $running] > 0 } {
 	set cmd [lindex $running 0]
 	upvar \#0 $cmd CMD
     
 	# Test if the process is still present.
-        set processes [sys::processes]
+        set processes [toclbox processes]
         ::utils::debug TRACE "Looking for $CMD(pid) within $processes"
         if { [lsearch $processes $CMD(pid)] >= 0 } {
             return $CMD(pid)
@@ -143,7 +143,7 @@ proc ::concocter::Killer { i {here 0} {capture {}}} {
     variable gvars
     
     # Check if we have a running command right now
-    set running [exec::running]
+    set running [toclbox running]
     if { [llength $running] > 0 } {
 	set cmd [lindex $running 0]
 	upvar \#0 $cmd CMD
@@ -151,7 +151,7 @@ proc ::concocter::Killer { i {here 0} {capture {}}} {
 	# Test if the process is still present. If we shouldn't perform that test,
 	# then assume that it is present so we can try sending the signal anyway.
 	if { $here } {
-	    set processes [sys::processes]
+	    set processes [toclbox processes]
 	    ::utils::debug TRACE "Looking for $CMD(pid) within $processes"
 	    set present [expr {[lsearch $processes $CMD(pid)] >= 0}]
 	} else {
@@ -185,12 +185,12 @@ proc ::concocter::Killer { i {here 0} {capture {}}} {
 		::utils::debug DEBUG "Sending signal $signal to $CMD(pid) and\
 		                      waiting for $respit ms."
 
-                sys::signal $signal $CMD(pid)
+                toclbox signal $signal $CMD(pid)
 
 		# Check if the signal is one of the signals requesting for the
 		# termination of the process. In which case we will be checking its
 		# presence after the respit period.
-                set deadtest [sys::deadly $signal]
+                set deadtest [toclbox deadly $signal]
 	    
 		# Pick up the respit period, sleep for that time and arrange to try
 		# sending the next signal in the list.
@@ -199,17 +199,17 @@ proc ::concocter::Killer { i {here 0} {capture {}}} {
 	} else {
 	    # The process isn't there, we can simply restart it.
             if { [llength $capture] } {
-                exec::run -keepblanks -raw -capture [namespace code [list WatchDog $capture]] -- {*}${gvars::-command}
+                toclbox exec -keepblanks -raw -capture [namespace code [list WatchDog $capture]] -- {*}${gvars::-command}
             } else {
-                exec::run -keepblanks -raw -- {*}${gvars::-command}
+                toclbox exec -keepblanks -raw -- {*}${gvars::-command}
             }
 	}
     } else {
         # The process isn't there, we can simply restart it.
         if { [llength $capture] } {
-            exec::run -keepblanks -raw -capture [namespace code [list WatchDog $capture]] -- {*}${gvars::-command}
+            toclbox exec -keepblanks -raw -capture [namespace code [list WatchDog $capture]] -- {*}${gvars::-command}
         } else {
-            exec::run -keepblanks -raw -- {*}${gvars::-command}
+            toclbox exec -keepblanks -raw -- {*}${gvars::-command}
         }
     }
 }
