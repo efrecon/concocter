@@ -429,24 +429,28 @@ proc ::concocter::loop { nexts {hook ""} {watchdog ""} {idx 0}} {
     # Note that the implementation of the one-shot process start replaces this
     # process by the process specified as the process under our control.
     set vars [var::vars]
-    if { [update $vars $forceupdate] > 0 || $firsttime } {
-        if { [string is true ${gvars::-dryrun}]} {
-	    ::utils::debug NOTICE "Would have executed: ${gvars::-command}"
-	} else {
-	    ::utils::debug NOTICE "Templates changed, now executing: ${gvars::-command}"
-            if { [llength ${gvars::-command}] > 0 } {
-                if { $next < 0 } {
-                    exec {*}${gvars::-command}
-                } else {
-                    # Check if we have a running command right now
-                    Killer 0 1 $watchdog
-                }
-            } else {
-                ::utils::debug WARN "Nothing to execute!"
-            }
-        }
+    if { [catch {update $vars $forceupdate} updates] } {
+        ::utils::debug ERROR "Could not update outputs: $updates"
     } else {
-        ::utils::debug INFO "No changes to templates, nothing to do"
+        if { $updates > 0 || $firsttime } {
+            if { [string is true ${gvars::-dryrun}]} {
+                ::utils::debug NOTICE "Would have executed: ${gvars::-command}"
+            } else {
+                ::utils::debug NOTICE "Templates changed, now executing: ${gvars::-command}"
+                if { [llength ${gvars::-command}] > 0 } {
+                    if { $next < 0 } {
+                        exec {*}${gvars::-command}
+                    } else {
+                        # Check if we have a running command right now
+                        Killer 0 1 $watchdog
+                    }
+                } else {
+                    ::utils::debug WARN "Nothing to execute!"
+                }
+            }
+        } else {
+            ::utils::debug INFO "No changes to templates, nothing to do"
+        }
     }
 }
 

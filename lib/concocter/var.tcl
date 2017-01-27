@@ -95,11 +95,8 @@ proc ::concocter::var::update { var } {
     foreach {ptn cmd} $gvars::plugins {
         if { $VAR(-source) ne "" && [string match $ptn $VAR(-source)] } {
             set src [string map [snapshot] $VAR(-source)]
-            if { [catch {eval [list $cmd $var $src [Hints $VAR(-origin)]]} res] } {
-                ::utils::debug WARN "Cannot update $var from $src through plugin $cmd: $res"
-            } else {
-                return $res
-            }
+            # Let it fail and propagate error to caller on purpose
+            return [eval [list $cmd $var $src [Hints $VAR(-origin)]]]
         }
     }
     return 0
