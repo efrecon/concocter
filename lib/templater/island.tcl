@@ -17,7 +17,7 @@ namespace eval ::island {
     namespace eval interps {};   # Will host information for interpreters
     namespace export {[a-z]*};   # Convention: export all lowercase 
     catch {namespace ensemble create}
-    variable version 0.2
+    variable version 0.3
 }
 
 
@@ -42,8 +42,8 @@ proc ::island::add { slave path } {
     if { ![info exists $vname]} {
         Init $slave
     }
-    upvar \#0 $vname paths
-    lappend paths [::file dirname [::file normalize $path/___]]
+    upvar \#0 $vname context
+    dict lappend context paths [::file dirname [::file normalize $path/___]]
 }
 
 
@@ -63,10 +63,13 @@ proc ::island::add { slave path } {
 proc ::island::reset { slave } {
     set vname [namespace current]::interps::[string map {: _} $slave]
     if { [info exists $vname] } {
-        $slave alias file {}
-        $slave alias open {}
-        $slave alias glob {}
-        $slave alias fconfigure {}
+        foreach cmd [list file fconfigure cd glob open] {
+            if { [dict exists $context aliases $cmd] } {
+                $slave alias $cmd [dict get $context aliases $cmd]
+            } else {
+                $slave alias $cmd {}
+            }
+        }
         unset $vname
     }    
 }
@@ -98,12 +101,14 @@ proc ::island::reset { slave } {
 #       None.
 proc ::island::Allowed { slave fname } {
     set vname [namespace current]::interps::[string map {: _} $slave]
-    upvar \#0 $vname paths
+    upvar \#0 $vname context
 
     set abs_fname [::file dirname [::file normalize $fname/___]]
-    foreach path $paths {
-        if { [string first $path $abs_fname] == 0 } {
-            return 1
+    if { [info exists $vname] && [dict exists $context paths] } {
+        foreach path [dict get $context paths] {
+            if { [string first $path $abs_fname] == 0 } {
+                return 1
+            }
         }
     }
     return 0
@@ -147,7 +152,7 @@ proc ::island::File { slave cmd args } {
         writable {
             set fname [lindex $args 0]
             if { [Allowed $slave $fname] } {
-                return [uplevel [linsert $args 0 ::file $cmd]]
+                return [uplevel [linsert $args 0 [namespace current]::Invoke "" ::file $cmd]]
                 # file is highly restrictive in slaves, so we can't do the following.
                 return [uplevel [linsert $args 0 $slave invokehidden ::file $cmd]]
             } else {
@@ -165,7 +170,7 @@ proc ::island::File { slave cmd args } {
         split -
         tail -
         volumes {
-            return [uplevel [linsert $args 0 ::file $cmd]]
+            return [uplevel [linsert $args 0 [namespace current]::Invoke "" ::file $cmd]]
             # file is highly restrictive in slaves, so we can't do the following.
             return [uplevel [linsert $args 0 $slave invokehidden file $cmd]]
         }
@@ -188,7 +193,7 @@ proc ::island::File { slave cmd args } {
                     return -code error "Access to $path denied."
                 }
             }
-            return [uplevel [linsert $args 0 ::file $cmd]]
+            return [uplevel [linsert $args 0 [namespace current]::Invoke "" ::file $cmd]]
             # file is highly restrictive in slaves, so we can't do the following.
             return [uplevel [linsert $args 0 $slave invokehidden file $cmd]]
         }
@@ -198,7 +203,7 @@ proc ::island::File { slave cmd args } {
                     return -code error "Access to $path denied."
                 }
             }
-            return [uplevel [linsert $args 0 ::file $cmd]]
+            return [uplevel [linsert $args 0 [namespace current]::Invoke "" ::file $cmd]]
             # file is highly restrictive in slaves, so we can't do the following.
             return [uplevel [linsert $args 0 $slave invokehidden file $cmd]]
         }
@@ -228,14 +233,14 @@ proc ::island::Open { slave args } {
     }
     
     if { [Allowed $slave $fname] } {
-        return [uplevel [linsert $args 0 $slave invokehidden open]]
+        return [uplevel [linsert $args 0 [namespace current]::Invoke $slave open]]
     } else {
         return -code error "Access to $fname denied."
     }
 }
 
 
-# ::island::Expose -- Expose back a command
+# ::island::Invoke -- Expose back a command
 #
 #       This procedure allows to callback a command that would typically have
 #       been hidden from a slave interpreter. It does not "interp expose" but
@@ -243,7 +248,7 @@ proc ::island::Open { slave args } {
 #
 # Arguments:
 #	slave	Identifier of the slave under our control
-#	cmd	Hidden command to call
+#	cmd 	Hidden command to call
 #	args	Arguments to the glob command.
 #
 # Results:
@@ -251,10 +256,33 @@ proc ::island::Open { slave args } {
 #
 # Side Effects:
 #       As of the hidden command to call
-proc ::island::Expose { slave cmd args } {
-    return [uplevel [linsert $args 0 $slave invokehidden $cmd]]
+proc ::island::Invoke { slave cmd args } {
+    set vname [namespace current]::interps::[string map {: _} $slave]
+    upvar \#0 $vname context
+
+    if { [info exists $vname] && [dict exists $context aliases $cmd] } {
+        # Aliased command is to be called in same interpreter as the the main
+        # interpreter
+        return [uplevel [dict get $context aliases $cmd] $args]
+    } elseif { $slave eq "" } {
+        return [uplevel [linsert $args 0 $cmd]]
+    } else {
+        return [uplevel [linsert $args 0 $slave invokehidden $cmd]]
+    }
 }
 
+
+proc ::island::Cd { slave { dirname "" } } {
+    if { $dirname eq "" } {
+        return [uplevel [list [namespace current]::Invoke $slave cd]]
+    } else {
+        if { ![Allowed $slave $dirname] } {
+            return -code error "Access to $dirname denied"
+        } else {
+            return [uplevel [list [namespace current]::Invoke $slave cd $dirname]]            
+        }
+    }
+}
 
 # ::island::Glob -- Restricted glob
 #
@@ -305,7 +333,36 @@ proc ::island::Glob { slave args } {
         }
     }
 
-    return [uplevel [linsert $args 0 $slave invokehidden glob]]    
+    return [uplevel [linsert $args 0 [namespace current]::Invoke $slave glob]]            
+}
+
+
+# ::island::Alias -- Careful aliasing
+#
+#       Create an alias to an existing into this library, making sure to
+#       remember where the command was already aliased to whenever relevant.
+#
+# Arguments:
+#	slave	Identifier of the slave to control
+#	cmd 	Command to alias
+#	args	Additional arguments to command
+#
+# Results:
+#       None.
+#
+# Side Effects:
+#       None.
+proc ::island::Alias { slave cmd args } {
+    set vname [namespace current]::interps::[string map {: _} $slave]
+    upvar \#0 $vname context
+
+    if { ![info exists $vname] || ![dict exists $context aliases $cmd] } {
+        set alias [$slave alias $cmd]
+        if { $alias ne "" } {
+            dict set context aliases $cmd $alias
+        }
+    }
+    return [uplevel [linsert $args 0 $slave alias $cmd]]
 }
 
 
@@ -323,12 +380,13 @@ proc ::island::Glob { slave args } {
 # Side Effects:
 #       None.
 proc ::island::Init { slave } {
-    $slave alias file ::island::File $slave
-    $slave alias glob ::island::Glob $slave
+    Alias $slave file ::island::File $slave
+    Alias $slave glob ::island::Glob $slave
     # Allow to open some of the files, and since we did, arrange to be able to
     # fconfigure them once opened.
-    $slave alias open ::island::Open $slave
-    $slave alias fconfigure ::island::Expose $slave fconfigure
+    Alias $slave cd ::island::Cd $slave
+    Alias $slave open ::island::Open $slave
+    Alias $slave fconfigure ::island::Invoke $slave fconfigure
 }
 
 
