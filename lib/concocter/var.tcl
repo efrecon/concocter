@@ -145,9 +145,9 @@ proc ::concocter::var::new { name { src "" } {dft ""} {origin ""}} {
         set VAR(-origin) $origin
         set VAR(value) $dft
         if { $src eq "" } {
-            ::utils::debug DEBUG "Created internal variable $name (default: $dft)"    
+            ::utils::debug INFO "Created internal variable $name (default: $dft)"    
         } else {
-            ::utils::debug DEBUG "Created variable $name to update from $src (default: $dft)"    
+            ::utils::debug INFO "Created variable $name to update from $src (default: $dft)"    
         }
     } else {
         if { $src ne "" } {
