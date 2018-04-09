@@ -4,3 +4,6 @@
 [submodule "lib/toclbox"]
 	path = lib/toclbox
 	url = https://github.com/efrecon/toclbox.git
+[submodule "lib/tockler"]
+	path = lib/tockler
+	url = https://github.com/efrecon/tockler.git
