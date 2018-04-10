@@ -2,6 +2,7 @@
 
 set resolvedArgv0 [file dirname [file normalize $argv0/___]];  # Trick to resolve last symlink
 set appname [file rootname [file tail $resolvedArgv0]]
+if { $appname eq "main" } { set appname concocter }
 set rootdir [file normalize [file dirname $resolvedArgv0]]
 foreach ldir [list [file join $rootdir .. lib] \
 		    [file join $rootdir lib] \
@@ -23,10 +24,10 @@ package require utils
 package require templater
 package require http
 package require tls
-package require uri
 package require base64
 package require concocter
 
+set version 1.0
 set prg_args {
     -vars     ""    "List of variables and their locations, preceed with @-sign for file indirection"
     -outputs  ""    "List of file paths and their templates, preceed with @-sign for file indirection"
@@ -36,6 +37,7 @@ set prg_args {
     -dryrun   "off" "Dry-run, do not execute, just perform templating"
     -kill     "15 500 15 1000 15 1000 9 3000" "Sequence of signals and respit periods"
     -verbose  "templater 3 utils 2 * 5"     "Verbosity specification for internal modules"
+    -version  ""    "Print current version number and exit"
     -access   {}    "List of directories or files that templaters can access"
     -h        ""    "Print this help and exit"
     -plugins  "@%maindir%/lib/concocter/plugins.spc" "Plugin configuration"
@@ -61,17 +63,17 @@ if { [catch {package require minihttpd} ver] == 0 } {
 # Side Effects:
 #       Exit program
 proc ::help:dump { { hdr "" } } {
-    global appname
+    global appname version
     
     if { $hdr ne "" } {
 	puts $hdr
 	puts ""
     }
     puts "NAME:"
-    puts "\t$appname - Generates configuration files and (re)run another program"
+    puts "\t$appname v$version - Generates configuration files and (re)run another program"
     puts ""
     puts "USAGE"
-    puts "\t${appname}.tcl \[options\] -- \[controlled program\]"
+    puts "\t${appname} \[options\] -- \[controlled program\]"
     puts ""
     puts "OPTIONS:"
     foreach { arg val dsc } $::prg_args {
@@ -86,6 +88,10 @@ proc ::help:dump { { hdr "" } } {
 ::utils::pullopt argv opts
 if { [::utils::getopt opts -h] } {
     ::help:dump
+}
+if { [::utils::getopt opts -version] } {
+    puts "$version"
+    exit
 }
 
 # Extract list of command-line options into array that will contain
