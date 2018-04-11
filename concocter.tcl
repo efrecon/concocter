@@ -26,7 +26,7 @@ package require http
 package require base64
 package require concocter
 
-set version 1.0
+set version 1.1-dev
 set prg_args {
     -vars     ""    "List of variables and their locations, preceed with @-sign for file indirection"
     -outputs  ""    "List of file paths and their templates, preceed with @-sign for file indirection"
