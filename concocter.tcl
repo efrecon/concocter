@@ -23,7 +23,6 @@ package require Tcl 8.6
 package require utils
 package require templater
 package require http
-package require tls
 package require base64
 package require concocter
 
@@ -122,19 +121,11 @@ foreach {k v} [array get CCT -*] {
 }
 ::utils::debug DEBUG [string trim $startup]
 
-
 # Make sure we use TLS whenever we can, now that POODLE has been
 # here... Then connect to all sources and start living forever.
-set cmd [list ::tls::socket]
-foreach {opt dft} [list ssl2 0 ssl3 0 tls1 1 tls1.1 1 tls1.2 1] {
-    if { [catch {::tls::socket -$opt 1 localhost 0} err] } {
-	 if { [string match "couldn't open socket*" $err] } {
-	     lappend cmd -$opt $dft
-	 }
-    }
+if { [llength [toclbox https]] == 0 } {
+    ::utils::debug WARN "No support for TLS and encryption available!"
 }
-::utils::debug DEBUG "Using $cmd for establishing HTTPS connections"
-::http::register https 443 $cmd
 
 # Read content of plugin specification file, if relevant, and register the
 # variable plugins.
