@@ -61,6 +61,7 @@ proc cleanup { { target "" } } {
     }
 }
 
+
 proc ::download { fpath url } {
     toclbox log NOTICE "Downloading $url to $fpath"
     
@@ -78,6 +79,7 @@ proc ::download { fpath url } {
     ::http::cleanup $tok
     return $ret
 }
+
 
 proc ::kit { { platform "" } } {
     global bindir force
@@ -110,6 +112,7 @@ proc ::kit { { platform "" } } {
     }
     return $tclkit
 }
+
 
 # Get the tcllib, this is a complete overkill, but is generic and
 # might help us in the future. We get it from the github mirror as
