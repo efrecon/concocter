@@ -16,7 +16,23 @@ set rootdir [file join $dirname ..]
 package require toclbox;
 toclbox verbosity * INFO
 
-# Tcl 8.6.8, KitCreator 0.10.2, Platform linux-amd64-static, metakit, tcllib, tls, minimal build
+proc ::kits {} {
+    global bindir
+
+    set kits [dict create]    
+    set fd [open [file join $bindir bootstrap.dwl]]
+    while {![eof $fd]} {
+        set line [string trim [gets $fd]]
+        if { $line ne "" && [string index $line 0] ne "\#" } {
+            lassign $line platform url
+            dict set kits $platform $url
+        }
+    }
+    close $fd
+    
+    return $kits
+}
+
 
 # Quick options parsing, accepting several times -target
 set targets [list]; set version ""; set force 0; set keep 0
@@ -37,6 +53,10 @@ for { set i 0 } { $i < [llength $argv] } { incr i } {
         "-k*" {
             set keep 1
         }
+        "-p*" {
+            puts "Available platforms: [join [dict keys [::kits]] ,\ ]"
+            exit
+        }
         "--" {
             incr i
             break
@@ -51,24 +71,6 @@ if { ![llength $targets] } {
     set targets [list "concocter"]
 }
 toclbox log NOTICE "Building targets: $targets"
-
-proc ::kits {} {
-    global bindir
-
-    set kits [dict create]    
-    set fd [open [file join $bindir bootstrap.dwl]]
-    while {![eof $fd]} {
-        set line [string trim [gets $fd]]
-        if { $line ne "" && [string index $line 0] ne "\#" } {
-            lassign $line platform url
-            dict set kits $platform $url
-        }
-    }
-    close $fd
-    
-    return $kits
-}
-
 
 # Build for all platforms or specific platform
 if { [llength $argv] == 0 } {
