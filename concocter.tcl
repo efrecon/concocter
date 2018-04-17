@@ -5,19 +5,19 @@ set appname [file rootname [file tail $resolvedArgv0]]
 if { $appname eq "main" } { set appname concocter }
 set rootdir [file normalize [file dirname $resolvedArgv0]]
 foreach ldir [list [file join $rootdir .. lib] \
-		    [file join $rootdir lib] \
-		    [file join $rootdir .. lib til] \
-		    [file join $rootdir lib til]] {
+        [file join $rootdir lib] \
+        [file join $rootdir .. lib til] \
+        [file join $rootdir lib til]] {
     if { [file isdirectory $ldir] } {
-	lappend auto_path $ldir
+        lappend auto_path $ldir
     }
 }
 foreach ldir [list [file join $rootdir .. lib toclbox] \
-		    [file join $rootdir lib toclbox]] {
+        [file join $rootdir lib toclbox]] {
     if { [file isdirectory $ldir] } {
-	::tcl::tm::path add $ldir
+        ::tcl::tm::path add $ldir
     }
-}    
+}
 
 package require Tcl 8.6
 package require utils
@@ -45,7 +45,7 @@ set prg_args {
 # Add RESTish API only if we can find an HTTP server implementation
 if { [catch {package require minihttpd} ver] == 0 } {
     lappend prg_args \
-	-port "-1" "Port number for RESTish API"
+            -port "-1" "Port number for RESTish API"
 }
 
 # ::help:dump -- Dump help
@@ -65,8 +65,8 @@ proc ::help:dump { { hdr "" } } {
     global appname version
     
     if { $hdr ne "" } {
-	puts $hdr
-	puts ""
+        puts $hdr
+        puts ""
     }
     puts "NAME:"
     puts "\t$appname v$version - Generates configuration files and (re)run another program"
@@ -76,9 +76,9 @@ proc ::help:dump { { hdr "" } } {
     puts ""
     puts "OPTIONS:"
     foreach { arg val dsc } $::prg_args {
-	puts "\t[string range ${arg}[string repeat \  9] 0 9]$dsc (default: ${val})"
+        puts "\t[string range ${arg}[string repeat \  9] 0 9]$dsc (default: ${val})"
     }
-    exit    
+    exit
 }
 
 
@@ -131,7 +131,7 @@ if { [llength [toclbox https]] == 0 } {
 # variable plugins.
 if { [string index $CCT(-plugins) 0] eq "@" } {
     set fname [::utils::resolve [string trim [string range $CCT(-plugins) 1 end]] \
-		    [list maindir $rootdir]]
+            [list maindir $rootdir]]
     ::utils::debug INFO "Reading content of $fname for the plugins"
     set CCT(-plugins) [::utils::lread $fname -1 "plugins"]
 }
